@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eCommerce  — Sales Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#0a0b0f;
+  --bg-secondary:#12131a;
+  --bg-card:#181921;
+  --bg-card-hover:#1e1f2c;
+  --bg-elevated:#22243a;
+  --border:#2a2c3e;
+  --border-light:#353750;
+  --text-primary:#f0f0f5;
+  --text-secondary:#9395a5;
+  --text-muted:#6b6d80;
+  --accent:#6c5ce7;
+  --accent-glow:#6c5ce740;
+  --green:#00d2a0;
+  --green-bg:#00d2a015;
+  --red:#ff6b6b;
+  --red-bg:#ff6b6b15;
+  --orange:#fdcb6e;
+  --orange-bg:#fdcb6e15;
+  --blue:#74b9ff;
+  --blue-bg:#74b9ff15;
+  --cyan:#00cec9;
+  --sidebar-w:260px;
+  --radius:12px;
+  --radius-sm:8px;
+  --transition:0.2s cubic-bezier(.4,0,.2,1);
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+
+/* ═══════════ UPLOAD SCREEN ═══════════ */
+.upload-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg-primary);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px;
+  transition:opacity 0.5s,transform 0.5s;
+}
+.upload-screen.hidden{opacity:0;transform:scale(1.02);pointer-events:none}
+.upload-brand{text-align:center;margin-bottom:40px}
+.upload-brand h1{
+  font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:8px;
+}
+.upload-brand p{color:var(--text-muted);font-size:0.9rem;max-width:500px}
+.upload-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;max-width:1100px;width:100%;margin-bottom:36px;
+}
+.upload-zone{
+  background:var(--bg-card);border:2px dashed var(--border);
+  border-radius:var(--radius);padding:32px 24px;text-align:center;
+  cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden;
+}
+.upload-zone:hover{border-color:var(--accent);background:var(--bg-card-hover);transform:translateY(-2px)}
+.upload-zone.dragover{border-color:var(--accent);background:rgba(108,92,231,0.06);box-shadow:0 0 30px var(--accent-glow)}
+.upload-zone.done{border-color:var(--green);border-style:solid}
+.upload-zone.done .uz-icon{color:var(--green)}
+.upload-zone.done .uz-status{color:var(--green)}
+.uz-icon{font-size:2.5rem;margin-bottom:12px;display:block;transition:color var(--transition)}
+.uz-title{font-weight:700;font-size:1rem;margin-bottom:6px;color:var(--text-primary)}
+.uz-desc{font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
+.uz-status{font-size:0.75rem;font-weight:600;color:var(--text-muted);transition:color var(--transition)}
+.uz-mandatory{margin-top:14px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.uz-mandatory .m-chip{
+  background:var(--red-bg);border:1px solid #ff6b6b25;color:var(--red);
+  padding:2px 8px;border-radius:12px;font-size:0.65rem;font-weight:600;
+}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-progress-bar{position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--bg-elevated)}
+.upload-progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--cyan));border-radius:0 2px 2px 0;transition:width 0.3s}
+.launch-btn{
+  background:linear-gradient(135deg,var(--accent),#7c5ce7);color:#fff;border:none;
+  padding:14px 48px;border-radius:var(--radius);font-size:1rem;font-weight:700;
+  cursor:pointer;transition:all var(--transition);font-family:'DM Sans',sans-serif;
+  letter-spacing:0.5px;opacity:0.35;pointer-events:none;box-shadow:0 4px 24px var(--accent-glow);
+}
+.launch-btn.ready{opacity:1;pointer-events:auto}
+.launch-btn.ready:hover{transform:translateY(-2px);box-shadow:0 8px 40px var(--accent-glow)}
+.upload-hint{margin-top:16px;font-size:0.75rem;color:var(--text-muted)}
+
+/* ═══════════ APP ═══════════ */
+.app-wrap{display:none}
+.app-wrap.visible{display:block}
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
+  background:var(--bg-secondary);border-right:1px solid var(--border);
+  z-index:100;display:flex;flex-direction:column;transition:transform var(--transition);
+}
+.sidebar-brand{padding:24px 20px;border-bottom:1px solid var(--border)}
+.sidebar-brand h1{
+  font-family:'Space Mono',monospace;font-size:1.15rem;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px;
+}
+.sidebar-brand p{font-size:0.72rem;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:1.5px}
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav-section{font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);padding:16px 12px 8px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--radius-sm);
+  cursor:pointer;transition:all var(--transition);color:var(--text-secondary);font-size:0.9rem;font-weight:500;
+}
+.nav-item:hover{background:var(--bg-card);color:var(--text-primary)}
+.nav-item.active{background:var(--accent);color:#fff;box-shadow:0 4px 20px var(--accent-glow)}
+.nav-item .icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.nav-item .badge{
+  margin-left:auto;background:var(--bg-elevated);color:var(--text-muted);
+  font-size:0.7rem;padding:2px 7px;border-radius:10px;font-weight:600;font-family:'Space Mono',monospace;
+}
+.nav-item.active .badge{background:rgba(255,255,255,0.2);color:#fff}
+.sidebar-footer{
+  padding:12px 16px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.reload-btn{
+  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);
+  padding:5px 12px;border-radius:6px;font-size:0.7rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all var(--transition);
+}
+.reload-btn:hover{border-color:var(--accent);color:var(--text-primary)}
+.main{margin-left:var(--sidebar-w);min-height:100vh}
+.topbar{
+  position:sticky;top:0;z-index:50;background:var(--bg-primary);border-bottom:1px solid var(--border);
+  padding:16px 32px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);
+}
+.topbar h2{font-size:1.25rem;font-weight:700;letter-spacing:-0.3px}
+.topbar-actions{display:flex;gap:10px;align-items:center}
+.search-box{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 14px;color:var(--text-primary);font-size:0.85rem;width:260px;outline:none;
+  transition:border var(--transition);font-family:'DM Sans',sans-serif;
+}
+.search-box:focus{border-color:var(--accent)}
+.search-box::placeholder{color:var(--text-muted)}
+.content{padding:24px 32px 48px}
+.section{display:none}
+.section.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;transition:all var(--transition);position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.stat-card.purple::before{background:var(--accent)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.red::before{background:var(--red)}
+.stat-card.orange::before{background:var(--orange)}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.cyan::before{background:var(--cyan)}
+.stat-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.stat-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px}
+.stat-value{font-family:'Space Mono',monospace;font-size:1.75rem;font-weight:700;letter-spacing:-1px}
+.stat-sub{font-size:0.78rem;color:var(--text-secondary);margin-top:6px}
+.stat-sub .up{color:var(--green)} .stat-sub .down{color:var(--red)}
+.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.table-header h3{font-size:1rem;font-weight:600}
+.table-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-select,.filter-input{
+  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
+  padding:7px 12px;border-radius:var(--radius-sm);font-size:0.8rem;outline:none;font-family:'DM Sans',sans-serif;
+}
+.filter-select:focus,.filter-input:focus{border-color:var(--accent)}
+.table-scroll{overflow-x:auto;max-height:600px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:0.82rem}
+thead{position:sticky;top:0;z-index:5;background:var(--bg-elevated)}
+th{padding:12px 16px;text-align:left;font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary);white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+tr:hover td{background:var(--bg-card-hover);color:var(--text-primary)}
+.mandatory{color:var(--red);font-size:0.65rem;font-weight:700;vertical-align:super}
+.badge-tag{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-orange{background:var(--orange-bg);color:var(--orange)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-purple{background:var(--accent-glow);color:var(--accent)}
+.category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.cat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px;transition:all var(--transition)}
+.cat-card:hover{border-color:var(--border-light);transform:translateY(-1px)}
+.cat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.cat-info h4{font-size:0.95rem;font-weight:600;margin-bottom:4px}
+.cat-info p{font-size:0.78rem;color:var(--text-muted)}
+.cat-info .num{font-family:'Space Mono',monospace;font-size:1.35rem;font-weight:700;margin-bottom:2px}
+.costing-input{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:6px;width:100px;font-family:'Space Mono',monospace;font-size:0.82rem;text-align:right;outline:none}
+.costing-input:focus{border-color:var(--accent)}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)}
+.pagination-btns{display:flex;gap:4px}
+.page-btn{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.78rem;transition:all var(--transition);font-family:'DM Sans',sans-serif}
+.page-btn:hover{border-color:var(--accent);color:var(--text-primary)}
+.page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.page-btn:disabled{opacity:0.3;cursor:not-allowed}
+.mandatory-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px}
+.mandatory-section h4{font-size:0.85rem;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.mandatory-section h4 .dot{width:8px;height:8px;background:var(--red);border-radius:50%;display:inline-block}
+.mandatory-list{display:flex;flex-wrap:wrap;gap:8px}
+.mandatory-chip{background:var(--red-bg);border:1px solid #ff6b6b30;color:var(--red);padding:5px 14px;border-radius:20px;font-size:0.75rem;font-weight:600}
+.progress-bar{height:8px;background:var(--bg-elevated);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:4px;transition:width 0.6s ease}
+.return-visual{display:flex;gap:32px;align-items:center;margin-bottom:24px;flex-wrap:wrap}
+.donut-wrap{position:relative;width:160px;height:160px;flex-shrink:0}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.donut-center .num{font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700}
+.donut-center .lbl{font-size:0.7rem;color:var(--text-muted)}
+.legend-items{display:flex;flex-direction:column;gap:12px}
+.legend-item{display:flex;align-items:center;gap:10px}
+.legend-dot{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.legend-label{font-size:0.85rem;color:var(--text-secondary)}
+.legend-val{font-family:'Space Mono',monospace;font-weight:700;font-size:0.95rem;margin-left:auto}
+.sku-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.sku-tab{padding:6px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;cursor:pointer;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);transition:all var(--transition)}
+.sku-tab:hover{border-color:var(--accent);color:var(--text-primary)}
+.sku-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.menu-toggle{display:none;background:none;border:none;color:var(--text-primary);font-size:1.4rem;cursor:pointer;padding:4px}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}.menu-toggle{display:block}.content{padding:16px}
+  .topbar{padding:12px 16px}.stats-grid{grid-template-columns:repeat(2,1fr)}
+  .upload-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:520px){.upload-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeUp 0.35s ease forwards}
+.animate-in:nth-child(1){animation-delay:0.04s}.animate-in:nth-child(2){animation-delay:0.08s}
+.animate-in:nth-child(3){animation-delay:0.12s}.animate-in:nth-child(4){animation-delay:0.16s}
+.animate-in:nth-child(5){animation-delay:0.2s}.animate-in:nth-child(6){animation-delay:0.24s}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.pulse{animation:pulse 2s infinite}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ UPLOAD SCREEN ═══════════ -->
+<div class="upload-screen" id="uploadScreen">
+  <div class="upload-brand">
+    <h1>⚡ eCommerce</h1>
+    <p>Upload your 4 Excel sheets to power up the Sales Command Center. Drag & drop or click to browse.</p>
+  </div>
+  <div class="upload-grid">
+    <div class="upload-zone" id="zone-orders">
+      <span class="uz-icon">📦</span>
+      <div class="uz-title">Order Received</div>
+      <div class="uz-desc">All received orders data</div>
+      <div class="uz-status" id="status-orders">Click or drag .xlsx file</div>
+      <div class="uz-mandatory">
+        <span class="m-chip">order_id</span><span class="m-chip">order_date</span><span class="m-chip">sku</span><span class="m-chip">quantity</span><span class="m-chip">order_item_id</span>
+      </div>
+      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'orders')">
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-orders"></div></div>
+    </div>
+    <div class="upload-zone" id="zone-returns">
+      <span class="uz-icon">↩️</span>
+      <div class="uz-title">Order Return</div>
+      <div class="uz-desc">Return & RTO data</div>
+      <div class="uz-status" id="status-returns">Click or drag .xlsx file</div>
+      <div class="uz-mandatory">
+        <span class="m-chip">order_item_id</span><span class="m-chip">return_type</span><span class="m-chip">sku</span><span class="m-chip">quantity</span>
+      </div>
+      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'returns')">
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-returns"></div></div>
+    </div>
+    <div class="upload-zone" id="zone-payments">
+      <span class="uz-icon">💰</span>
+      <div class="uz-title">Payment Sheet</div>
+      <div class="uz-desc">Settlement & GST/TDS data</div>
+      <div class="uz-status" id="status-payments">Click or drag .xlsx file</div>
+      <div class="uz-mandatory">
+        <span class="m-chip">Settlement Value</span><span class="m-chip">GST+TCS</span><span class="m-chip">TDS</span><span class="m-chip">Order ID</span>
+      </div>
+      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'payments')">
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-payments"></div></div>
+    </div>
+    <div class="upload-zone" id="zone-pnl">
+      <span class="uz-icon">📈</span>
+      <div class="uz-title">PNL Sheet</div>
+      <div class="uz-desc">SKU costing data</div>
+      <div class="uz-status" id="status-pnl">Click or drag .xlsx file</div>
+      <div class="uz-mandatory">
+        <span class="m-chip">SKU</span><span class="m-chip">Costing</span>
+      </div>
+      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'pnl')">
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-pnl"></div></div>
+    </div>
+  </div>
+  <button class="launch-btn" id="launchBtn" onclick="launchDashboard()">🚀 Launch Dashboard</button>
+  <div class="upload-hint">All processing happens in your browser — no data is sent anywhere.</div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div class="app-wrap" id="appWrap">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><h1>⚡ EMITRACKON</h1><p>Sales Command Center</p></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Analytics</div>
+      <div class="nav-item active" data-section="dashboard" onclick="switchSection('dashboard')"><span class="icon">📊</span> Dashboard</div>
+      <div class="nav-section">Management</div>
+      <div class="nav-item" data-section="orders" onclick="switchSection('orders')"><span class="icon">📦</span> Orders Received<span class="badge" id="ordersCount">0</span></div>
+      <div class="nav-item" data-section="returns" onclick="switchSection('returns')"><span class="icon">↩️</span> Order Returns<span class="badge" id="returnsCount">0</span></div>
+      <div class="nav-item" data-section="payments" onclick="switchSection('payments')"><span class="icon">💰</span> Payment Sheet<span class="badge" id="paymentsCount">0</span></div>
+      <div class="nav-item" data-section="pnl" onclick="switchSection('pnl')"><span class="icon">📈</span> PNL Sheet</div>
+    </nav>
+    <div class="sidebar-footer"><span>v1.0</span><button class="reload-btn" onclick="reloadData()">↻ Re-upload</button></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <h2 id="pageTitle">Dashboard</h2>
+      </div>
+      <div class="topbar-actions"><input type="text" class="search-box" id="globalSearch" placeholder="Search orders, SKU, ID..." oninput="handleGlobalSearch(this.value)"></div>
+    </div>
+    <div class="content">
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stats-grid" id="dashStats"></div>
+        <div class="category-grid" id="dashSkuOverview"></div>
+        <div class="table-container">
+          <div class="table-header"><h3>Recent Orders</h3></div>
+          <div class="table-scroll"><table><thead><tr><th>Order ID</th><th>Date</th><th>SKU</th><th>Product</th><th>Qty</th><th>Status</th></tr></thead><tbody id="dashRecentOrders"></tbody></table></div>
+        </div>
+      </div>
+      <!-- ORDERS -->
+      <div class="section" id="sec-orders">
+        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">order_id</span><span class="mandatory-chip">order_date</span><span class="mandatory-chip">sku</span><span class="mandatory-chip">fsn</span><span class="mandatory-chip">product_title</span><span class="mandatory-chip">quantity</span><span class="mandatory-chip">order_item_id</span></div></div>
+        <div class="stats-grid" id="orderStats"></div>
+        <div class="sku-tabs" id="orderSkuTabs"></div>
+        <div class="table-container">
+          <div class="table-header"><h3>All Orders Received</h3><div class="table-filters"><input type="text" class="filter-input" id="orderSearchInput" placeholder="Search..." oninput="renderOrdersTable()"><select class="filter-select" id="orderSkuFilter" onchange="renderOrdersTable()"><option value="">All SKUs</option></select></div></div>
+          <div class="table-scroll"><table><thead><tr><th>#</th><th>Order ID <span class="mandatory">*</span></th><th>Date <span class="mandatory">*</span></th><th>SKU <span class="mandatory">*</span></th><th>FSN</th><th>Product Title</th><th>Qty</th><th>Item ID <span class="mandatory">*</span></th><th>Return?</th></tr></thead><tbody id="ordersTableBody"></tbody></table></div>
+          <div class="pagination" id="ordersPagination"></div>
+        </div>
+      </div>
+      <!-- RETURNS -->
+      <div class="section" id="sec-returns">
+        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">order_item_id</span><span class="mandatory-chip">return_type</span><span class="mandatory-chip">sku</span><span class="mandatory-chip">product_title</span><span class="mandatory-chip">quantity</span></div></div>
+        <div class="stats-grid" id="returnStats"></div>
+        <div class="return-visual" id="returnVisual"></div>
+        <div class="category-grid" id="returnCategoryCards"></div>
+        <div class="table-container">
+          <div class="table-header"><h3>All Returns</h3><div class="table-filters"><select class="filter-select" id="returnTypeFilter" onchange="renderReturnsTable()"><option value="">All Types</option><option value="courier_return">Courier Return (RTO)</option><option value="customer_return">Customer Return</option></select><select class="filter-select" id="returnSkuFilter" onchange="renderReturnsTable()"><option value="">All SKUs</option></select></div></div>
+          <div class="table-scroll"><table><thead><tr><th>#</th><th>Item ID <span class="mandatory">*</span></th><th>Return Type <span class="mandatory">*</span></th><th>SKU</th><th>Product Title</th><th>Qty</th><th>Matched Order</th></tr></thead><tbody id="returnsTableBody"></tbody></table></div>
+          <div class="pagination" id="returnsPagination"></div>
+        </div>
+      </div>
+      <!-- PAYMENTS -->
+      <div class="section" id="sec-payments">
+        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">Bank Settlement Value</span><span class="mandatory-chip">GST + TCS</span><span class="mandatory-chip">TDS</span><span class="mandatory-chip">Order ID</span><span class="mandatory-chip">Order Item ID</span><span class="mandatory-chip">Seller SKU</span></div></div>
+        <div class="stats-grid" id="paymentStats"></div>
+        <div class="category-grid" id="paymentSkuCards"></div>
+        <div class="table-container">
+          <div class="table-header"><h3>Payment Details</h3><div class="table-filters"><select class="filter-select" id="paymentStatusFilter" onchange="renderPaymentsTable()"><option value="">All</option><option value="received">Payment Received</option><option value="pending">Payment Pending</option></select><select class="filter-select" id="paymentSkuFilter" onchange="renderPaymentsTable()"><option value="">All SKUs</option></select></div></div>
+          <div class="table-scroll"><table><thead><tr><th>#</th><th>Order ID <span class="mandatory">*</span></th><th>Item ID</th><th>SKU</th><th>Settlement ₹</th><th>GST+TCS ₹</th><th>TDS ₹</th><th>Status</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div>
+          <div class="pagination" id="paymentsPagination"></div>
+        </div>
+      </div>
+      <!-- PNL -->
+      <div class="section" id="sec-pnl">
+        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">SKU</span><span class="mandatory-chip">Costing (Manual Input)</span></div></div>
+        <div class="stats-grid" id="pnlStats"></div>
+        <div class="category-grid" id="pnlReturnBreakdown"></div>
+        <div class="table-container" style="margin-bottom:24px">
+          <div class="table-header"><h3>SKU-wise Costing (Editable)</h3><span style="font-size:0.75rem;color:var(--text-muted)">Admin can manually update costing</span></div>
+          <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Costing ₹</th><th>Total Orders</th><th>Net Orders</th><th>Returns</th><th>Return %</th><th>Total Cost</th><th>Expected Revenue</th></tr></thead><tbody id="pnlCostingBody"></tbody></table></div>
+        </div>
+        <div class="table-container">
+          <div class="table-header"><h3>Upcoming Payments by SKU</h3></div>
+          <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Pending Orders</th><th>Received ₹</th><th>Pending ₹</th><th>Est. Pending Value</th></tr></thead><tbody id="pnlUpcomingBody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ORDERS_DATA=[],RETURNS_DATA=[],PAYMENTS_DATA=[],COSTING_DATA=[];
+const uploadState={orders:false,returns:false,payments:false,pnl:false};
+const ROWS_PER_PAGE=50;
+let currentOrderPage=1,currentReturnPage=1,currentPaymentPage=1,activeSkuFilter='';
+let returnItemMap={},orderItemMap={},costingMap={},allSkus=[];
+
+// ═══════════ DRAG & DROP ═══════════
+document.querySelectorAll('.upload-zone').forEach(zone=>{
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover')});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.classList.remove('dragover');
+    const f=e.dataTransfer.files[0];
+    if(f){processFile(f,zone.id.replace('zone-',''))}
+  });
+});
+
+function handleFile(inp,key){if(inp.files[0])processFile(inp.files[0],key)}
+
+function processFile(file,key){
+  const zone=document.getElementById('zone-'+key);
+  const status=document.getElementById('status-'+key);
+  const prog=document.getElementById('prog-'+key);
+  status.textContent='Processing...';status.classList.add('pulse');prog.style.width='30%';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      prog.style.width='60%';
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array',cellDates:true});
+      const sh=wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(sh,{defval:''});
+      prog.style.width='80%';
+      if(key==='orders')parseOrders(json);
+      else if(key==='returns')parseReturns(json);
+      else if(key==='payments')parsePayments(json);
+      else if(key==='pnl')parsePnl(json);
+      prog.style.width='100%';zone.classList.add('done');status.classList.remove('pulse');
+      uploadState[key]=true;
+      const c={orders:ORDERS_DATA.length,returns:RETURNS_DATA.length,payments:PAYMENTS_DATA.length,pnl:COSTING_DATA.length};
+      status.textContent='✓ '+c[key]+' rows loaded';
+      checkAllUploaded();
+    }catch(err){status.textContent='✗ Error: '+err.message;status.classList.remove('pulse');prog.style.width='0';console.error(err)}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════ PARSERS ═══════════
+function findCol(row,kws){
+  const keys=Object.keys(row);
+  for(const kw of kws){const m=keys.find(k=>k.toLowerCase().replace(/[\s_\-\.]+/g,'').includes(kw.toLowerCase().replace(/[\s_\-\.]+/g,'')));if(m)return m}
+  return null;
+}
+function cleanSku(v){return String(v||'').replace(/"/g,'').replace(/SKU:/gi,'').trim()}
+
+function parseOrders(json){
+  if(!json.length)return;const r=json[0];
+  const c1=findCol(r,['order_id','orderid']),c2=findCol(r,['order_date','orderdate','date']),c3=findCol(r,['sku','seller_sku','sellersku']),
+  c4=findCol(r,['fsn']),c5=findCol(r,['product_title','producttitle','title','product']),
+  c6=findCol(r,['quantity','qty']),c7=findCol(r,['order_item_id','orderitemid','item_id']);
+  ORDERS_DATA=json.filter(r=>r[c1]).map(r=>({
+    order_id:String(r[c1]||''),order_date:r[c2] instanceof Date?r[c2].toISOString().replace('T',' ').slice(0,19):String(r[c2]||''),
+    sku:cleanSku(r[c3]),fsn:String(r[c4]||''),product_title:String(r[c5]||'').replace(/"/g,'').slice(0,80),
+    quantity:parseInt(r[c6])||0,order_item_id:String(r[c7]||'')
+  }));
+}
+function parseReturns(json){
+  if(!json.length)return;const r=json[0];
+  const c1=findCol(r,['order_item_id','orderitemid','item_id']),c2=findCol(r,['return_type','returntype','type']),
+  c3=findCol(r,['sku','seller_sku']),c4=findCol(r,['product_title','title','product']),c5=findCol(r,['quantity','qty']);
+  RETURNS_DATA=json.filter(r=>r[c1]).map(r=>({
+    order_item_id:String(r[c1]||''),return_type:String(r[c2]||''),sku:cleanSku(r[c3]),
+    product_title:String(r[c4]||'').replace(/"/g,'').slice(0,80),quantity:parseInt(r[c5])||0
+  }));
+}
+function parsePayments(json){
+  if(!json.length)return;const r=json[0];
+  const c1=findCol(r,['settlement','banksettlement']),c2=findCol(r,['gst','inputgst','gsttcs','tcs']),
+  c3=findCol(r,['tds','incometax']),c4=findCol(r,['orderid','order_id']),
+  c5=findCol(r,['orderitem','item_id','order_item_id']),c6=findCol(r,['sku','sellersku']);
+  PAYMENTS_DATA=json.filter(r=>r[c4]).map(r=>{
+    let iid=r[c5];if(typeof iid==='number')iid='OI:'+Math.round(iid).toString();else iid=String(iid||'');
+    return{settlement_value:parseFloat(r[c1])||0,gst_tcs:parseFloat(r[c2])||0,tds:parseFloat(r[c3])||0,
+    order_id:String(r[c4]||''),order_item_id:iid,sku:cleanSku(r[c6])};
+  });
+}
+function parsePnl(json){
+  if(!json.length)return;const r=json[0];
+  const c1=findCol(r,['sku']),c2=findCol(r,['costing','cost','price']);
+  COSTING_DATA=json.filter(r=>r[c1]).map(r=>({sku:String(r[c1]||'').trim(),costing:parseFloat(r[c2])||0}));
+}
+
+// ═══════════ LAUNCH ═══════════
+function checkAllUploaded(){
+  const btn=document.getElementById('launchBtn');
+  if(uploadState.orders&&uploadState.returns&&uploadState.payments&&uploadState.pnl){
+    btn.classList.add('ready');btn.textContent='🚀 Launch Dashboard ('+ORDERS_DATA.length+' orders)';
+  }
+}
+function launchDashboard(){
+  if(!uploadState.orders||!uploadState.returns||!uploadState.payments||!uploadState.pnl)return;
+  document.getElementById('uploadScreen').classList.add('hidden');
+  setTimeout(()=>{document.getElementById('uploadScreen').style.display='none';document.getElementById('appWrap').classList.add('visible');initDashboard()},500);
+}
+function reloadData(){
+  ORDERS_DATA=[];RETURNS_DATA=[];PAYMENTS_DATA=[];COSTING_DATA=[];
+  uploadState.orders=uploadState.returns=uploadState.payments=uploadState.pnl=false;
+  document.querySelectorAll('.upload-zone').forEach(z=>z.classList.remove('done'));
+  document.querySelectorAll('.upload-progress-fill').forEach(p=>p.style.width='0');
+  ['orders','returns','payments','pnl'].forEach(k=>document.getElementById('status-'+k).textContent='Click or drag .xlsx file');
+  document.getElementById('launchBtn').classList.remove('ready');document.getElementById('launchBtn').textContent='🚀 Launch Dashboard';
+  document.querySelectorAll('.upload-zone input[type="file"]').forEach(i=>i.value='');
+  document.getElementById('appWrap').classList.remove('visible');
+  const u=document.getElementById('uploadScreen');u.style.display='';u.classList.remove('hidden');
+}
+
+function initDashboard(){
+  returnItemMap={};RETURNS_DATA.forEach(r=>{returnItemMap[r.order_item_id]=r});
+  orderItemMap={};ORDERS_DATA.forEach(o=>{orderItemMap[o.order_item_id]=o});
+  costingMap={};COSTING_DATA.forEach(c=>{costingMap[c.sku]=c.costing});
+  allSkus=[...new Set(ORDERS_DATA.map(o=>o.sku).filter(Boolean))].sort();
+  const oSel=document.getElementById('orderSkuFilter');oSel.innerHTML='<option value="">All SKUs</option>';
+  allSkus.forEach(s=>{oSel.innerHTML+='<option value="'+s+'">'+s+'</option>'});
+  const rSel=document.getElementById('returnSkuFilter');rSel.innerHTML='<option value="">All SKUs</option>';
+  [...new Set(RETURNS_DATA.map(r=>r.sku).filter(Boolean))].sort().forEach(s=>{rSel.innerHTML+='<option value="'+s+'">'+s+'</option>'});
+  const pSel=document.getElementById('paymentSkuFilter');pSel.innerHTML='<option value="">All SKUs</option>';
+  [...new Set(PAYMENTS_DATA.map(p=>p.sku).filter(Boolean))].sort().forEach(s=>{pSel.innerHTML+='<option value="'+s+'">'+s+'</option>'});
+  renderDashboard();initOrders();initReturns();initPayments();renderPnl();
+}
+
+// ═══════════ NAV ═══════════
+function switchSection(n){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('sec-'+n).classList.add('active');
+  document.querySelector('.nav-item[data-section="'+n+'"]').classList.add('active');
+  const t={dashboard:'Dashboard',orders:'Orders Received',returns:'Order Returns',payments:'Payment Sheet',pnl:'PNL Sheet'};
+  document.getElementById('pageTitle').textContent=t[n]||n;
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+// ═══════════ UTILS ═══════════
+function fmt(n){return'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtInt(n){return Number(n).toLocaleString('en-IN')}
+function pct(p,t){return t===0?'0.0':((p/t)*100).toFixed(1)}
+function truncate(s,l=50){return s&&s.length>l?s.slice(0,l)+'…':(s||'—')}
+function renderPagination(cid,total,cur,fn){
+  const tp=Math.ceil(total/ROWS_PER_PAGE),c=document.getElementById(cid);
+  const st=(cur-1)*ROWS_PER_PAGE+1,en=Math.min(cur*ROWS_PER_PAGE,total);
+  let h=`<span>Showing ${st}–${en} of ${fmtInt(total)}</span><div class="pagination-btns">`;
+  h+=`<button class="page-btn" onclick="${fn}(1)" ${cur===1?'disabled':''}>«</button>`;
+  h+=`<button class="page-btn" onclick="${fn}(${cur-1})" ${cur===1?'disabled':''}>‹</button>`;
+  let sp=Math.max(1,cur-2),ep=Math.min(tp,sp+4);if(ep-sp<4)sp=Math.max(1,ep-4);
+  for(let i=sp;i<=ep;i++)h+=`<button class="page-btn ${i===cur?'active':''}" onclick="${fn}(${i})">${i}</button>`;
+  h+=`<button class="page-btn" onclick="${fn}(${cur+1})" ${cur>=tp?'disabled':''}>›</button>`;
+  h+=`<button class="page-btn" onclick="${fn}(${tp})" ${cur>=tp?'disabled':''}>»</button></div>`;
+  c.innerHTML=h;
+}
+
+// ═══════════ DASHBOARD ═══════════
+function renderDashboard(){
+  const to=ORDERS_DATA.length,tr=RETURNS_DATA.length,no=to-tr;
+  const cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length;
+  const cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length;
+  const ts=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0);
+  const pd=PAYMENTS_DATA.filter(p=>p.settlement_value>0).length;
+  const pp=PAYMENTS_DATA.filter(p=>p.settlement_value===0).length;
+  document.getElementById('ordersCount').textContent=fmtInt(to);
+  document.getElementById('returnsCount').textContent=fmtInt(tr);
+  document.getElementById('paymentsCount').textContent=fmtInt(PAYMENTS_DATA.length);
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div><div class="stat-sub">${allSkus.length} unique SKUs</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Net Orders</div><div class="stat-value">${fmtInt(no)}</div><div class="stat-sub"><span class="up">${pct(no,to)}%</span> of total</div></div>
+    <div class="stat-card red animate-in"><div class="stat-label">Total Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub"><span class="down">${pct(tr,to)}%</span> return rate</div></div>
+    <div class="stat-card orange animate-in"><div class="stat-label">RTO (Courier)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,tr)}% of returns</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Customer Returns</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,tr)}% of returns</div></div>
+    <div class="stat-card cyan animate-in"><div class="stat-label">Total Settlement</div><div class="stat-value">${fmt(ts)}</div><div class="stat-sub">${fmtInt(pd)} paid / ${fmtInt(pp)} pending</div></div>`;
+  const cols=['var(--accent)','var(--green)','var(--orange)','var(--blue)','var(--red)','var(--cyan)','#e056a0','#a29bfe'];
+  let sh='';allSkus.forEach((sku,i)=>{
+    const cnt=ORDERS_DATA.filter(o=>o.sku===sku).length;const rc=RETURNS_DATA.filter(r=>r.sku===sku).length;const c=cols[i%cols.length];
+    sh+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">📦</div><div class="cat-info"><div class="num">${fmtInt(cnt)}</div><h4>${sku}</h4><p>${rc} returns (${pct(rc,cnt)}%)</p></div></div>`;
+  });document.getElementById('dashSkuOverview').innerHTML=sh;
+  const recent=[...ORDERS_DATA].sort((a,b)=>b.order_date.localeCompare(a.order_date)).slice(0,15);
+  let tb='';recent.forEach(o=>{
+    const ir=returnItemMap[o.order_item_id];
+    const st=ir?`<span class="badge-tag badge-red">${ir.return_type==='courier_return'?'RTO':'Cust. Return'}</span>`:'<span class="badge-tag badge-green">Delivered</span>';
+    tb+=`<tr><td style="font-family:'Space Mono',monospace;font-size:0.75rem">${o.order_id}</td><td>${o.order_date.split(' ')[0]}</td><td><span class="badge-tag badge-purple">${o.sku}</span></td><td>${truncate(o.product_title,40)}</td><td>${o.quantity}</td><td>${st}</td></tr>`;
+  });document.getElementById('dashRecentOrders').innerHTML=tb;
+}
+
+// ═══════════ ORDERS ═══════════
+function initOrders(){
+  let tabs='<div class="sku-tab active" onclick="filterOrdersBySku(\'\')">All</div>';
+  allSkus.forEach(s=>{const c=ORDERS_DATA.filter(o=>o.sku===s).length;tabs+=`<div class="sku-tab" onclick="filterOrdersBySku('${s}')">${s} (${c})</div>`});
+  document.getElementById('orderSkuTabs').innerHTML=tabs;renderOrderStats();renderOrdersTable();
+}
+function renderOrderStats(){
+  const t=ORDERS_DATA.length,tq=ORDERS_DATA.reduce((s,o)=>s+o.quantity,0),rc=ORDERS_DATA.filter(o=>returnItemMap[o.order_item_id]).length;
+  document.getElementById('orderStats').innerHTML=`
+    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(t)}</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Total Quantity</div><div class="stat-value">${fmtInt(tq)}</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Delivered</div><div class="stat-value">${fmtInt(t-rc)}</div><div class="stat-sub"><span class="up">${pct(t-rc,t)}%</span></div></div>
+    <div class="stat-card red animate-in"><div class="stat-label">Returned</div><div class="stat-value">${fmtInt(rc)}</div><div class="stat-sub"><span class="down">${pct(rc,t)}%</span></div></div>`;
+}
+function filterOrdersBySku(sku){
+  activeSkuFilter=sku;document.getElementById('orderSkuFilter').value=sku;
+  document.querySelectorAll('#orderSkuTabs .sku-tab').forEach(t=>{t.classList.toggle('active',(sku===''&&t.textContent.startsWith('All'))||t.textContent.startsWith(sku+' '))});
+  currentOrderPage=1;renderOrdersTable();
+}
+function getFilteredOrders(){
+  let d=[...ORDERS_DATA];const sk=document.getElementById('orderSkuFilter').value||activeSkuFilter;
+  const sr=document.getElementById('orderSearchInput').value.toLowerCase().trim();
+  if(sk)d=d.filter(o=>o.sku===sk);if(sr)d=d.filter(o=>o.order_id.toLowerCase().includes(sr)||o.order_item_id.toLowerCase().includes(sr)||o.sku.toLowerCase().includes(sr)||o.product_title.toLowerCase().includes(sr));return d;
+}
+function renderOrdersTable(){
+  const d=getFilteredOrders(),st=(currentOrderPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
+  let h='';pg.forEach((o,i)=>{
+    const r=returnItemMap[o.order_item_id];
+    const rb=r?`<span class="badge-tag badge-red">${r.return_type==='courier_return'?'RTO':'Cust.'}</span>`:'<span class="badge-tag badge-green">No</span>';
+    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.74rem">${o.order_id}</td><td>${o.order_date.split(' ')[0]}</td><td><span class="badge-tag badge-purple">${o.sku}</span></td><td style="font-size:0.74rem">${o.fsn}</td><td title="${o.product_title}">${truncate(o.product_title,35)}</td><td>${o.quantity}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${o.order_item_id}</td><td>${rb}</td></tr>`;
+  });document.getElementById('ordersTableBody').innerHTML=h||'<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">No orders found</td></tr>';
+  renderPagination('ordersPagination',d.length,currentOrderPage,'goOrderPage');
+}
+function goOrderPage(p){currentOrderPage=p;renderOrdersTable()}
+
+// ═══════════ RETURNS ═══════════
+function initReturns(){renderReturnStats();renderReturnsTable()}
+function renderReturnStats(){
+  const t=RETURNS_DATA.length,cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length,
+  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length,to=ORDERS_DATA.length;
+  document.getElementById('returnStats').innerHTML=`
+    <div class="stat-card red animate-in"><div class="stat-label">Total Returns</div><div class="stat-value">${fmtInt(t)}</div><div class="stat-sub"><span class="down">${pct(t,to)}%</span> of all orders</div></div>
+    <div class="stat-card orange animate-in"><div class="stat-label">Courier Return (RTO)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,t)}% of returns</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Customer Return</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,t)}% of returns</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Net Delivered</div><div class="stat-value">${fmtInt(to-t)}</div><div class="stat-sub"><span class="up">${pct(to-t,to)}%</span></div></div>`;
+  const cp=t===0?50:(cr/t)*100,ctp=100-cp;
+  document.getElementById('returnVisual').innerHTML=`
+    <div class="donut-wrap"><svg viewBox="0 0 160 160" style="transform:rotate(-90deg)"><circle cx="80" cy="80" r="60" fill="none" stroke="var(--bg-elevated)" stroke-width="20"/><circle cx="80" cy="80" r="60" fill="none" stroke="var(--orange)" stroke-width="20" stroke-dasharray="${cp*3.77} 377" stroke-linecap="round"/><circle cx="80" cy="80" r="60" fill="none" stroke="var(--blue)" stroke-width="20" stroke-dasharray="${ctp*3.77} 377" stroke-dashoffset="${-cp*3.77}" stroke-linecap="round"/></svg><div class="donut-center"><div class="num">${fmtInt(t)}</div><div class="lbl">RETURNS</div></div></div>
+    <div class="legend-items"><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div><span class="legend-label">Courier (RTO)</span><span class="legend-val">${fmtInt(cr)} (${pct(cr,t)}%)</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span class="legend-label">Customer</span><span class="legend-val">${fmtInt(cu)} (${pct(cu,t)}%)</span></div></div>`;
+  const rs=[...new Set(RETURNS_DATA.map(r=>r.sku).filter(Boolean))].sort();
+  const cls=['var(--red)','var(--orange)','var(--blue)','var(--accent)','var(--cyan)','var(--green)'];
+  let cd='';rs.forEach((sku,i)=>{
+    const cnt=RETURNS_DATA.filter(r=>r.sku===sku).length,crr=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='courier_return').length,
+    cuu=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='customer_return').length,c=cls[i%cls.length];
+    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">↩️</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${cnt} returns</div><p>RTO: ${crr} (${pct(crr,cnt)}%) · Cust: ${cuu} (${pct(cuu,cnt)}%)</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(crr,cnt)}%;background:var(--orange)"></div></div></div></div>`;
+  });document.getElementById('returnCategoryCards').innerHTML=cd;
+}
+function getFilteredReturns(){
+  let d=[...RETURNS_DATA];const ty=document.getElementById('returnTypeFilter').value,sk=document.getElementById('returnSkuFilter').value;
+  if(ty)d=d.filter(r=>r.return_type===ty);if(sk)d=d.filter(r=>r.sku===sk);return d;
+}
+function renderReturnsTable(){
+  const d=getFilteredReturns(),st=(currentReturnPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
+  let h='';pg.forEach((r,i)=>{
+    const mo=orderItemMap[r.order_item_id];
+    const tb=r.return_type==='courier_return'?'<span class="badge-tag badge-orange">Courier (RTO)</span>':'<span class="badge-tag badge-blue">Customer</span>';
+    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${r.order_item_id}</td><td>${tb}</td><td><span class="badge-tag badge-purple">${r.sku}</span></td><td>${truncate(r.product_title,35)}</td><td>${r.quantity}</td><td>${mo?'<span class="badge-tag badge-green">✓ Matched</span>':'<span class="badge-tag badge-red">✗ No Match</span>'}</td></tr>`;
+  });document.getElementById('returnsTableBody').innerHTML=h||'<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">No returns found</td></tr>';
+  renderPagination('returnsPagination',d.length,currentReturnPage,'goReturnPage');
+}
+function goReturnPage(p){currentReturnPage=p;renderReturnsTable()}
+
+// ═══════════ PAYMENTS ═══════════
+function initPayments(){renderPaymentStats();renderPaymentsTable()}
+function renderPaymentStats(){
+  const ts=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0),tg=PAYMENTS_DATA.reduce((s,p)=>s+p.gst_tcs,0),
+  td=PAYMENTS_DATA.reduce((s,p)=>s+p.tds,0),rc=PAYMENTS_DATA.filter(p=>p.settlement_value>0),
+  pn=PAYMENTS_DATA.filter(p=>p.settlement_value===0);
+  const ris=new Set(RETURNS_DATA.map(r=>r.order_item_id));
+  const nrp=PAYMENTS_DATA.filter(p=>!ris.has(p.order_item_id)),nrr=nrp.filter(p=>p.settlement_value>0),nrpn=nrp.filter(p=>p.settlement_value===0);
+  document.getElementById('paymentStats').innerHTML=`
+    <div class="stat-card green animate-in"><div class="stat-label">Total Settlement</div><div class="stat-value">${fmt(ts)}</div><div class="stat-sub">${fmtInt(rc.length)} orders paid</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Total GST + TCS</div><div class="stat-value">${fmt(tg)}</div></div>
+    <div class="stat-card orange animate-in"><div class="stat-label">Total TDS</div><div class="stat-value">${fmt(td)}</div></div>
+    <div class="stat-card purple animate-in"><div class="stat-label">Payment Received</div><div class="stat-value">${fmtInt(rc.length)}</div><div class="stat-sub"><span class="up">${pct(rc.length,PAYMENTS_DATA.length)}%</span></div></div>
+    <div class="stat-card red animate-in"><div class="stat-label">Payment Pending</div><div class="stat-value">${fmtInt(pn.length)}</div><div class="stat-sub"><span class="down">${pct(pn.length,PAYMENTS_DATA.length)}%</span></div></div>
+    <div class="stat-card cyan animate-in"><div class="stat-label">After Returns (Net)</div><div class="stat-value">${fmtInt(nrp.length)}</div><div class="stat-sub">${fmtInt(nrr.length)} received · ${fmtInt(nrpn.length)} pending</div></div>`;
+  const ps=[...new Set(PAYMENTS_DATA.map(p=>p.sku).filter(Boolean))].sort();
+  const cls=['var(--green)','var(--accent)','var(--orange)','var(--blue)','var(--cyan)','var(--red)'];
+  let cd='';ps.forEach((sku,i)=>{
+    const sp=PAYMENTS_DATA.filter(p=>p.sku===sku),sv=sp.reduce((s,p)=>s+p.settlement_value,0),
+    sr=sp.filter(p=>p.settlement_value>0).length,spn=sp.filter(p=>p.settlement_value===0).length,c=cls[i%cls.length];
+    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">💰</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${fmt(sv)}</div><p>✓ ${sr} received · ⏳ ${spn} pending</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(sr,sp.length)}%;background:${c}"></div></div></div></div>`;
+  });document.getElementById('paymentSkuCards').innerHTML=cd;
+}
+function getFilteredPayments(){
+  let d=[...PAYMENTS_DATA];const s=document.getElementById('paymentStatusFilter').value,sk=document.getElementById('paymentSkuFilter').value;
+  if(s==='received')d=d.filter(p=>p.settlement_value>0);if(s==='pending')d=d.filter(p=>p.settlement_value===0);
+  if(sk)d=d.filter(p=>p.sku===sk);return d;
+}
+function renderPaymentsTable(){
+  const d=getFilteredPayments(),st=(currentPaymentPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
+  let h='';pg.forEach((p,i)=>{
+    const sb=p.settlement_value>0?'<span class="badge-tag badge-green">Received</span>':'<span class="badge-tag badge-red">Pending</span>';
+    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_id}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_item_id}</td><td><span class="badge-tag badge-purple">${p.sku}</span></td><td style="font-family:'Space Mono',monospace;color:${p.settlement_value>0?'var(--green)':'var(--red)'}">${fmt(p.settlement_value)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.gst_tcs)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.tds)}</td><td>${sb}</td></tr>`;
+  });document.getElementById('paymentsTableBody').innerHTML=h||'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No payments found</td></tr>';
+  renderPagination('paymentsPagination',d.length,currentPaymentPage,'goPaymentPage');
+}
+function goPaymentPage(p){currentPaymentPage=p;renderPaymentsTable()}
+
+// ═══════════ PNL ═══════════
+function renderPnl(){
+  const to=ORDERS_DATA.length,tr=RETURNS_DATA.length,no=to-tr,
+  cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length,
+  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length,
+  ts=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0);
+  document.getElementById('pnlStats').innerHTML=`
+    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Net Orders</div><div class="stat-value">${fmtInt(no)}</div><div class="stat-sub"><span class="up">${pct(no,to)}%</span></div></div>
+    <div class="stat-card red animate-in"><div class="stat-label">Net Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub"><span class="down">${pct(tr,to)}%</span></div></div>
+    <div class="stat-card orange animate-in"><div class="stat-label">RTO Returns</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,to)}% of orders</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Customer Returns</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,to)}% of orders</div></div>
+    <div class="stat-card cyan animate-in"><div class="stat-label">Revenue Collected</div><div class="stat-value">${fmt(ts)}</div></div>`;
+  document.getElementById('pnlReturnBreakdown').innerHTML=`
+    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--orange-bg);color:var(--orange)">🚚</div><div class="cat-info"><div class="num">${fmtInt(cr)}</div><h4>Courier Returns (RTO)</h4><p>${pct(cr,tr)}% of returns · ${pct(cr,to)}% of orders</p></div></div>
+    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--blue-bg);color:var(--blue)">👤</div><div class="cat-info"><div class="num">${fmtInt(cu)}</div><h4>Customer Returns</h4><p>${pct(cu,tr)}% of returns · ${pct(cu,to)}% of orders</p></div></div>`;
+  let ch='';allSkus.forEach(sku=>{
+    const oc=ORDERS_DATA.filter(o=>o.sku===sku).length,rc=RETURNS_DATA.filter(r=>r.sku===sku).length,
+    nt=oc-rc,co=costingMap[sku]||0,tc=nt*co,rv=PAYMENTS_DATA.filter(p=>p.sku===sku).reduce((s,p)=>s+p.settlement_value,0);
+    ch+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td><input type="number" class="costing-input" value="${co}" onchange="updateCosting('${sku}',this.value)"></td><td style="font-family:'Space Mono',monospace">${fmtInt(oc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmtInt(nt)}</td><td style="font-family:'Space Mono',monospace;color:var(--red)">${fmtInt(rc)} (${pct(rc,oc)}%)</td><td><span class="down">${pct(rc,oc)}%</span></td><td style="font-family:'Space Mono',monospace">${fmt(tc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(rv)}</td></tr>`;
+  });document.getElementById('pnlCostingBody').innerHTML=ch;
+  let uh='';allSkus.forEach(sku=>{
+    const sp=PAYMENTS_DATA.filter(p=>p.sku===sku),rec=sp.filter(p=>p.settlement_value>0),pen=sp.filter(p=>p.settlement_value===0),
+    rv=rec.reduce((s,p)=>s+p.settlement_value,0),avg=rec.length>0?rv/rec.length:0,est=pen.length*avg;
+    uh+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td style="font-family:'Space Mono',monospace">${fmtInt(pen.length)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(rv)}</td><td style="font-family:'Space Mono',monospace;color:var(--orange)">${fmtInt(pen.length)} orders</td><td style="font-family:'Space Mono',monospace;color:var(--cyan)">${fmt(est)}</td></tr>`;
+  });document.getElementById('pnlUpcomingBody').innerHTML=uh;
+}
+function updateCosting(sku,v){costingMap[sku]=parseFloat(v)||0;renderPnl()}
+function handleGlobalSearch(v){if(!v.trim())return;switchSection('orders');document.getElementById('orderSearchInput').value=v;currentOrderPage=1;renderOrdersTable()}
+</script>
+</body>
+</html>
