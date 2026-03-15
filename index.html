@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Emitrackon — Sales Command Center</title>
+<title>Sales Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -185,7 +185,7 @@ tr:hover td{background:rgba(31,34,53,.6);color:var(--t1)}
 
 <!-- ═══════════ UPLOAD SCREEN ═══════════ -->
 <div class="up-screen" id="US">
-<div class="up-brand"><h1>⚡ EMITRACKON</h1><p>Upload your 4 Excel sheets to power up the Sales Command Center. Drag & drop or click to browse — everything stays in your browser.</p></div>
+<div class="up-brand"><h1>⚡ Sales Command Center </h1><p>Upload your 4 Excel sheets to power up the Sales Command Center. Drag & drop or click to browse — everything stays in your browser.</p></div>
 <div class="up-grid">
 <div class="up-zone" id="z-orders"><span class="uz-ic">📦</span><div class="uz-tt">Order Received</div><div class="uz-ds">All received orders</div><div class="uz-st" id="s-orders">Click or drop .xlsx</div><div class="uz-md"><span class="mc">order_id</span><span class="mc">order_date</span><span class="mc">sku</span><span class="mc">quantity</span><span class="mc">order_item_id</span></div><input type="file" accept=".xlsx,.xls,.csv" onchange="hf(this,'orders')"><div class="up-bar"><div class="up-fill" id="p-orders"></div></div></div>
 <div class="up-zone" id="z-returns"><span class="uz-ic">↩️</span><div class="uz-tt">Order Return</div><div class="uz-ds">Return & RTO data</div><div class="uz-st" id="s-returns">Click or drop .xlsx</div><div class="uz-md"><span class="mc">order_item_id</span><span class="mc">return_type</span><span class="mc">sku</span><span class="mc">quantity</span></div><input type="file" accept=".xlsx,.xls,.csv" onchange="hf(this,'returns')"><div class="up-bar"><div class="up-fill" id="p-returns"></div></div></div>
@@ -199,7 +199,7 @@ tr:hover td{background:rgba(31,34,53,.6);color:var(--t1)}
 <!-- ═══════════ APP ═══════════ -->
 <div class="app" id="APP">
 <aside class="side" id="side">
-<div class="side-top"><h1>⚡ EMITRACKON</h1><p>Sales Command Center</p></div>
+<div class="side-top"><h1>⚡</h1><p>Sales Command Center</p></div>
 <nav class="side-nav">
 <div class="ns">Overview</div>
 <div class="ni on" data-s="dash" onclick="go('dash')"><span class="ic">📊</span>Dashboard</div>
