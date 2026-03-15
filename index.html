@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>eCommerce  — Sales Command Center</title>
+<title>Emitrackon — Sales Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -254,7 +254,7 @@ tr:hover td{background:var(--bg-card-hover);color:var(--text-primary)}
 <!-- ═══════════ UPLOAD SCREEN ═══════════ -->
 <div class="upload-screen" id="uploadScreen">
   <div class="upload-brand">
-    <h1>⚡ eCommerce</h1>
+    <h1>⚡ EMITRACKON</h1>
     <p>Upload your 4 Excel sheets to power up the Sales Command Center. Drag & drop or click to browse.</p>
   </div>
   <div class="upload-grid">
@@ -369,7 +369,7 @@ tr:hover td{background:var(--bg-card-hover);color:var(--text-primary)}
         <div class="stats-grid" id="paymentStats"></div>
         <div class="category-grid" id="paymentSkuCards"></div>
         <div class="table-container">
-          <div class="table-header"><h3>Payment Details</h3><div class="table-filters"><select class="filter-select" id="paymentStatusFilter" onchange="renderPaymentsTable()"><option value="">All</option><option value="received">Payment Received</option><option value="pending">Payment Pending</option></select><select class="filter-select" id="paymentSkuFilter" onchange="renderPaymentsTable()"><option value="">All SKUs</option></select></div></div>
+          <div class="table-header"><h3>Payment Details</h3><div class="table-filters"><select class="filter-select" id="paymentStatusFilter" onchange="renderPaymentsTable()"><option value="">All</option><option value="received">Payment Received</option><option value="pending">Payment Pending (₹0)</option><option value="negative">Negative / Refund</option></select><select class="filter-select" id="paymentSkuFilter" onchange="renderPaymentsTable()"><option value="">All SKUs</option></select></div></div>
           <div class="table-scroll"><table><thead><tr><th>#</th><th>Order ID <span class="mandatory">*</span></th><th>Item ID</th><th>SKU</th><th>Settlement ₹</th><th>GST+TCS ₹</th><th>TDS ₹</th><th>Status</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div>
           <div class="pagination" id="paymentsPagination"></div>
         </div>
@@ -381,7 +381,7 @@ tr:hover td{background:var(--bg-card-hover);color:var(--text-primary)}
         <div class="category-grid" id="pnlReturnBreakdown"></div>
         <div class="table-container" style="margin-bottom:24px">
           <div class="table-header"><h3>SKU-wise Costing (Editable)</h3><span style="font-size:0.75rem;color:var(--text-muted)">Admin can manually update costing</span></div>
-          <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Costing ₹</th><th>Total Orders</th><th>Net Orders</th><th>Returns</th><th>Return %</th><th>Total Cost</th><th>Expected Revenue</th></tr></thead><tbody id="pnlCostingBody"></tbody></table></div>
+          <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Costing ₹</th><th>Total Orders</th><th>Net Orders</th><th>Returns</th><th>Return %</th><th>Received</th><th>Total Cost</th><th>Revenue</th><th>Profit/Loss</th></tr></thead><tbody id="pnlCostingBody"></tbody></table></div>
         </div>
         <div class="table-container">
           <div class="table-header"><h3>Upcoming Payments by SKU</h3></div>
@@ -552,14 +552,34 @@ function renderPagination(cid,total,cur,fn){
   c.innerHTML=h;
 }
 
+// ═══════════ PAYMENT HELPERS ═══════════
+// Group payments by order_id → net settlement per unique order
+function getOrderNetMap(){
+  const m={};
+  PAYMENTS_DATA.forEach(p=>{
+    if(!m[p.order_id])m[p.order_id]={net:0,sku:p.sku};
+    m[p.order_id].net+=p.settlement_value;
+  });
+  return m;
+}
+function getOrderCounts(){
+  const m=getOrderNetMap(),vals=Object.values(m);
+  return{
+    received:vals.filter(v=>v.net>0).length,
+    pending:vals.filter(v=>v.net===0).length,
+    negative:vals.filter(v=>v.net<0).length,
+    total:vals.length
+  };
+}
+
 // ═══════════ DASHBOARD ═══════════
 function renderDashboard(){
   const to=ORDERS_DATA.length,tr=RETURNS_DATA.length,no=to-tr;
   const cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length;
   const cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length;
-  const ts=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0);
-  const pd=PAYMENTS_DATA.filter(p=>p.settlement_value>0).length;
-  const pp=PAYMENTS_DATA.filter(p=>p.settlement_value===0).length;
+  const tsNet=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0);
+  const tsPositive=PAYMENTS_DATA.filter(p=>p.settlement_value>0).reduce((s,p)=>s+p.settlement_value,0);
+  const rcCount=PAYMENTS_DATA.filter(p=>p.settlement_value>0).length;
   document.getElementById('ordersCount').textContent=fmtInt(to);
   document.getElementById('returnsCount').textContent=fmtInt(tr);
   document.getElementById('paymentsCount').textContent=fmtInt(PAYMENTS_DATA.length);
@@ -567,9 +587,9 @@ function renderDashboard(){
     <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div><div class="stat-sub">${allSkus.length} unique SKUs</div></div>
     <div class="stat-card green animate-in"><div class="stat-label">Net Orders</div><div class="stat-value">${fmtInt(no)}</div><div class="stat-sub"><span class="up">${pct(no,to)}%</span> of total</div></div>
     <div class="stat-card red animate-in"><div class="stat-label">Total Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub"><span class="down">${pct(tr,to)}%</span> return rate</div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">RTO (Courier)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,tr)}% of returns</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Customer Returns</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,tr)}% of returns</div></div>
-    <div class="stat-card cyan animate-in"><div class="stat-label">Total Settlement</div><div class="stat-value">${fmt(ts)}</div><div class="stat-sub">${fmtInt(pd)} paid / ${fmtInt(pp)} pending</div></div>`;
+    <div class="stat-card orange animate-in"><div class="stat-label">RTO (Courier)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,no)}% of delivered</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Customer Returns</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,no)}% of delivered</div></div>
+    <div class="stat-card cyan animate-in"><div class="stat-label">Total Settlement</div><div class="stat-value">${fmt(tsNet)}</div><div class="stat-sub">${fmtInt(rcCount)} received (${fmt(tsPositive)})</div></div>`;
   const cols=['var(--accent)','var(--green)','var(--orange)','var(--blue)','var(--red)','var(--cyan)','#e056a0','#a29bfe'];
   let sh='';allSkus.forEach((sku,i)=>{
     const cnt=ORDERS_DATA.filter(o=>o.sku===sku).length;const rc=RETURNS_DATA.filter(r=>r.sku===sku).length;const c=cols[i%cols.length];
@@ -622,22 +642,23 @@ function goOrderPage(p){currentOrderPage=p;renderOrdersTable()}
 function initReturns(){renderReturnStats();renderReturnsTable()}
 function renderReturnStats(){
   const t=RETURNS_DATA.length,cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length,
-  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length,to=ORDERS_DATA.length;
+  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length,to=ORDERS_DATA.length,del=to-t;
   document.getElementById('returnStats').innerHTML=`
     <div class="stat-card red animate-in"><div class="stat-label">Total Returns</div><div class="stat-value">${fmtInt(t)}</div><div class="stat-sub"><span class="down">${pct(t,to)}%</span> of all orders</div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">Courier Return (RTO)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,t)}% of returns</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Customer Return</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,t)}% of returns</div></div>
-    <div class="stat-card green animate-in"><div class="stat-label">Net Delivered</div><div class="stat-value">${fmtInt(to-t)}</div><div class="stat-sub"><span class="up">${pct(to-t,to)}%</span></div></div>`;
+    <div class="stat-card orange animate-in"><div class="stat-label">Courier Return (RTO)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,del)}% of delivered</div></div>
+    <div class="stat-card blue animate-in"><div class="stat-label">Customer Return</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,del)}% of delivered</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Net Delivered</div><div class="stat-value">${fmtInt(del)}</div><div class="stat-sub"><span class="up">${pct(del,to)}%</span></div></div>`;
   const cp=t===0?50:(cr/t)*100,ctp=100-cp;
   document.getElementById('returnVisual').innerHTML=`
     <div class="donut-wrap"><svg viewBox="0 0 160 160" style="transform:rotate(-90deg)"><circle cx="80" cy="80" r="60" fill="none" stroke="var(--bg-elevated)" stroke-width="20"/><circle cx="80" cy="80" r="60" fill="none" stroke="var(--orange)" stroke-width="20" stroke-dasharray="${cp*3.77} 377" stroke-linecap="round"/><circle cx="80" cy="80" r="60" fill="none" stroke="var(--blue)" stroke-width="20" stroke-dasharray="${ctp*3.77} 377" stroke-dashoffset="${-cp*3.77}" stroke-linecap="round"/></svg><div class="donut-center"><div class="num">${fmtInt(t)}</div><div class="lbl">RETURNS</div></div></div>
-    <div class="legend-items"><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div><span class="legend-label">Courier (RTO)</span><span class="legend-val">${fmtInt(cr)} (${pct(cr,t)}%)</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span class="legend-label">Customer</span><span class="legend-val">${fmtInt(cu)} (${pct(cu,t)}%)</span></div></div>`;
+    <div class="legend-items"><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div><span class="legend-label">Courier (RTO)</span><span class="legend-val">${fmtInt(cr)} (${pct(cr,del)}% of del.)</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span class="legend-label">Customer</span><span class="legend-val">${fmtInt(cu)} (${pct(cu,del)}% of del.)</span></div></div>`;
   const rs=[...new Set(RETURNS_DATA.map(r=>r.sku).filter(Boolean))].sort();
   const cls=['var(--red)','var(--orange)','var(--blue)','var(--accent)','var(--cyan)','var(--green)'];
   let cd='';rs.forEach((sku,i)=>{
     const cnt=RETURNS_DATA.filter(r=>r.sku===sku).length,crr=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='courier_return').length,
-    cuu=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='customer_return').length,c=cls[i%cls.length];
-    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">↩️</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${cnt} returns</div><p>RTO: ${crr} (${pct(crr,cnt)}%) · Cust: ${cuu} (${pct(cuu,cnt)}%)</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(crr,cnt)}%;background:var(--orange)"></div></div></div></div>`;
+    cuu=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='customer_return').length,
+    skuOrders=ORDERS_DATA.filter(o=>o.sku===sku).length,skuDel=skuOrders-cnt,c=cls[i%cls.length];
+    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">↩️</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${cnt} returns</div><p>RTO: ${crr} (${pct(crr,skuDel)}%) · Cust: ${cuu} (${pct(cuu,skuDel)}%) of delivered</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(crr,cnt)}%;background:var(--orange)"></div></div></div></div>`;
   });document.getElementById('returnCategoryCards').innerHTML=cd;
 }
 function getFilteredReturns(){
@@ -658,36 +679,41 @@ function goReturnPage(p){currentReturnPage=p;renderReturnsTable()}
 // ═══════════ PAYMENTS ═══════════
 function initPayments(){renderPaymentStats();renderPaymentsTable()}
 function renderPaymentStats(){
-  const ts=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0),tg=PAYMENTS_DATA.reduce((s,p)=>s+p.gst_tcs,0),
-  td=PAYMENTS_DATA.reduce((s,p)=>s+p.tds,0),rc=PAYMENTS_DATA.filter(p=>p.settlement_value>0),
-  pn=PAYMENTS_DATA.filter(p=>p.settlement_value===0);
-  const ris=new Set(RETURNS_DATA.map(r=>r.order_item_id));
-  const nrp=PAYMENTS_DATA.filter(p=>!ris.has(p.order_item_id)),nrr=nrp.filter(p=>p.settlement_value>0),nrpn=nrp.filter(p=>p.settlement_value===0);
+  const tsAll=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0),
+  tsPositive=PAYMENTS_DATA.filter(p=>p.settlement_value>0).reduce((s,p)=>s+p.settlement_value,0),
+  tg=PAYMENTS_DATA.reduce((s,p)=>s+p.gst_tcs,0),
+  td=PAYMENTS_DATA.reduce((s,p)=>s+p.tds,0);
+  const rcRows=PAYMENTS_DATA.filter(p=>p.settlement_value>0),
+  pnRows=PAYMENTS_DATA.filter(p=>p.settlement_value===0),
+  negRows=PAYMENTS_DATA.filter(p=>p.settlement_value<0),
+  negTotal=negRows.reduce((s,p)=>s+p.settlement_value,0);
   document.getElementById('paymentStats').innerHTML=`
-    <div class="stat-card green animate-in"><div class="stat-label">Total Settlement</div><div class="stat-value">${fmt(ts)}</div><div class="stat-sub">${fmtInt(rc.length)} orders paid</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Total Settlement (Net)</div><div class="stat-value">${fmt(tsAll)}</div><div class="stat-sub">All ${fmtInt(PAYMENTS_DATA.length)} rows summed</div></div>
     <div class="stat-card blue animate-in"><div class="stat-label">Total GST + TCS</div><div class="stat-value">${fmt(tg)}</div></div>
     <div class="stat-card orange animate-in"><div class="stat-label">Total TDS</div><div class="stat-value">${fmt(td)}</div></div>
-    <div class="stat-card purple animate-in"><div class="stat-label">Payment Received</div><div class="stat-value">${fmtInt(rc.length)}</div><div class="stat-sub"><span class="up">${pct(rc.length,PAYMENTS_DATA.length)}%</span></div></div>
-    <div class="stat-card red animate-in"><div class="stat-label">Payment Pending</div><div class="stat-value">${fmtInt(pn.length)}</div><div class="stat-sub"><span class="down">${pct(pn.length,PAYMENTS_DATA.length)}%</span></div></div>
-    <div class="stat-card cyan animate-in"><div class="stat-label">After Returns (Net)</div><div class="stat-value">${fmtInt(nrp.length)}</div><div class="stat-sub">${fmtInt(nrr.length)} received · ${fmtInt(nrpn.length)} pending</div></div>`;
+    <div class="stat-card purple animate-in"><div class="stat-label">Payment Received</div><div class="stat-value">${fmtInt(rcRows.length)}</div><div class="stat-sub"><span class="up">${fmt(tsPositive)}</span></div></div>
+    <div class="stat-card red animate-in"><div class="stat-label">Payment Pending (₹0)</div><div class="stat-value">${fmtInt(pnRows.length)}</div><div class="stat-sub"><span class="down">${pct(pnRows.length,PAYMENTS_DATA.length)}%</span> of rows</div></div>
+    <div class="stat-card cyan animate-in"><div class="stat-label">Negative / Refund</div><div class="stat-value">${fmtInt(negRows.length)}</div><div class="stat-sub"><span class="down">${fmt(Math.abs(negTotal))}</span> deducted</div></div>`;
   const ps=[...new Set(PAYMENTS_DATA.map(p=>p.sku).filter(Boolean))].sort();
   const cls=['var(--green)','var(--accent)','var(--orange)','var(--blue)','var(--cyan)','var(--red)'];
   let cd='';ps.forEach((sku,i)=>{
-    const sp=PAYMENTS_DATA.filter(p=>p.sku===sku),sv=sp.reduce((s,p)=>s+p.settlement_value,0),
-    sr=sp.filter(p=>p.settlement_value>0).length,spn=sp.filter(p=>p.settlement_value===0).length,c=cls[i%cls.length];
-    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">💰</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${fmt(sv)}</div><p>✓ ${sr} received · ⏳ ${spn} pending</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(sr,sp.length)}%;background:${c}"></div></div></div></div>`;
+    const sp=PAYMENTS_DATA.filter(p=>p.sku===sku),sv=sp.reduce((s,p)=>s+p.settlement_value,0);
+    // Group by order_id for this SKU
+    const skuOrders={};sp.forEach(p=>{if(!skuOrders[p.order_id])skuOrders[p.order_id]=0;skuOrders[p.order_id]+=p.settlement_value});
+    const skuVals=Object.values(skuOrders),sr=skuVals.filter(v=>v>0).length,spn=skuVals.filter(v=>v<=0).length,c=cls[i%cls.length];
+    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">💰</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${fmt(sv)}</div><p>✓ ${sr} received · ⏳ ${spn} pending</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(sr,skuVals.length)}%;background:${c}"></div></div></div></div>`;
   });document.getElementById('paymentSkuCards').innerHTML=cd;
 }
 function getFilteredPayments(){
   let d=[...PAYMENTS_DATA];const s=document.getElementById('paymentStatusFilter').value,sk=document.getElementById('paymentSkuFilter').value;
-  if(s==='received')d=d.filter(p=>p.settlement_value>0);if(s==='pending')d=d.filter(p=>p.settlement_value===0);
+  if(s==='received')d=d.filter(p=>p.settlement_value>0);if(s==='pending')d=d.filter(p=>p.settlement_value===0);if(s==='negative')d=d.filter(p=>p.settlement_value<0);
   if(sk)d=d.filter(p=>p.sku===sk);return d;
 }
 function renderPaymentsTable(){
   const d=getFilteredPayments(),st=(currentPaymentPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
   let h='';pg.forEach((p,i)=>{
-    const sb=p.settlement_value>0?'<span class="badge-tag badge-green">Received</span>':'<span class="badge-tag badge-red">Pending</span>';
-    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_id}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_item_id}</td><td><span class="badge-tag badge-purple">${p.sku}</span></td><td style="font-family:'Space Mono',monospace;color:${p.settlement_value>0?'var(--green)':'var(--red)'}">${fmt(p.settlement_value)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.gst_tcs)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.tds)}</td><td>${sb}</td></tr>`;
+    const sb=p.settlement_value>0?'<span class="badge-tag badge-green">Received</span>':(p.settlement_value===0?'<span class="badge-tag badge-red">Pending</span>':'<span class="badge-tag badge-orange">Negative</span>');
+    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_id}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_item_id}</td><td><span class="badge-tag badge-purple">${p.sku}</span></td><td style="font-family:'Space Mono',monospace;color:${p.settlement_value>0?'var(--green)':(p.settlement_value<0?'var(--orange)':'var(--red)')}">${fmt(p.settlement_value)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.gst_tcs)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.tds)}</td><td>${sb}</td></tr>`;
   });document.getElementById('paymentsTableBody').innerHTML=h||'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No payments found</td></tr>';
   renderPagination('paymentsPagination',d.length,currentPaymentPage,'goPaymentPage');
 }
@@ -697,27 +723,38 @@ function goPaymentPage(p){currentPaymentPage=p;renderPaymentsTable()}
 function renderPnl(){
   const to=ORDERS_DATA.length,tr=RETURNS_DATA.length,no=to-tr,
   cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length,
-  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length,
-  ts=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0);
+  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length;
+  // RULE: +ve settlement row = 1 received order
+  const recRows=PAYMENTS_DATA.filter(p=>p.settlement_value>0);
+  const recCount=recRows.length;
+  const totalRevenue=recRows.reduce((s,p)=>s+p.settlement_value,0);
+  let totalCostAll=0;
+  allSkus.forEach(sku=>{totalCostAll+=recRows.filter(p=>p.sku===sku).length*(costingMap[sku]||0)});
+  const totalProfit=totalRevenue-totalCostAll;
   document.getElementById('pnlStats').innerHTML=`
-    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div></div>
-    <div class="stat-card green animate-in"><div class="stat-label">Net Orders</div><div class="stat-value">${fmtInt(no)}</div><div class="stat-sub"><span class="up">${pct(no,to)}%</span></div></div>
-    <div class="stat-card red animate-in"><div class="stat-label">Net Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub"><span class="down">${pct(tr,to)}%</span></div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">RTO Returns</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,to)}% of orders</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Customer Returns</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,to)}% of orders</div></div>
-    <div class="stat-card cyan animate-in"><div class="stat-label">Revenue Collected</div><div class="stat-value">${fmt(ts)}</div></div>`;
+    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div><div class="stat-sub">Net: ${fmtInt(no)} · Returns: ${fmtInt(tr)}</div></div>
+    <div class="stat-card green animate-in"><div class="stat-label">Payment Received</div><div class="stat-value">${fmtInt(recCount)}</div><div class="stat-sub">+ve settlement rows</div></div>
+    <div class="stat-card cyan animate-in"><div class="stat-label">Revenue</div><div class="stat-value">${fmt(totalRevenue)}</div><div class="stat-sub">${fmtInt(recCount)} orders × avg ${fmt(recCount>0?totalRevenue/recCount:0)}</div></div>
+    <div class="stat-card orange animate-in"><div class="stat-label">Total Costing</div><div class="stat-value">${fmt(totalCostAll)}</div><div class="stat-sub">${fmtInt(recCount)} × per unit cost</div></div>
+    <div class="stat-card ${totalProfit>=0?'green':'red'} animate-in"><div class="stat-label">Net Profit / Loss</div><div class="stat-value" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">${fmt(totalProfit)}</div><div class="stat-sub">${totalProfit>=0?'<span class="up">Profit</span>':'<span class="down">Loss</span>'} · Margin: ${pct(Math.abs(totalProfit),totalRevenue)}%</div></div>
+    <div class="stat-card red animate-in"><div class="stat-label">Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub">RTO: ${fmtInt(cr)} (${pct(cr,no)}%) · Cust: ${fmtInt(cu)} (${pct(cu,no)}%)</div></div>`;
   document.getElementById('pnlReturnBreakdown').innerHTML=`
-    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--orange-bg);color:var(--orange)">🚚</div><div class="cat-info"><div class="num">${fmtInt(cr)}</div><h4>Courier Returns (RTO)</h4><p>${pct(cr,tr)}% of returns · ${pct(cr,to)}% of orders</p></div></div>
-    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--blue-bg);color:var(--blue)">👤</div><div class="cat-info"><div class="num">${fmtInt(cu)}</div><h4>Customer Returns</h4><p>${pct(cu,tr)}% of returns · ${pct(cu,to)}% of orders</p></div></div>`;
+    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--orange-bg);color:var(--orange)">🚚</div><div class="cat-info"><div class="num">${fmtInt(cr)}</div><h4>Courier Returns (RTO)</h4><p>${pct(cr,no)}% of delivered orders</p></div></div>
+    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--blue-bg);color:var(--blue)">👤</div><div class="cat-info"><div class="num">${fmtInt(cu)}</div><h4>Customer Returns</h4><p>${pct(cu,no)}% of delivered orders</p></div></div>`;
   let ch='';allSkus.forEach(sku=>{
     const oc=ORDERS_DATA.filter(o=>o.sku===sku).length,rc=RETURNS_DATA.filter(r=>r.sku===sku).length,
-    nt=oc-rc,co=costingMap[sku]||0,tc=nt*co,rv=PAYMENTS_DATA.filter(p=>p.sku===sku).reduce((s,p)=>s+p.settlement_value,0);
-    ch+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td><input type="number" class="costing-input" value="${co}" onchange="updateCosting('${sku}',this.value)"></td><td style="font-family:'Space Mono',monospace">${fmtInt(oc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmtInt(nt)}</td><td style="font-family:'Space Mono',monospace;color:var(--red)">${fmtInt(rc)} (${pct(rc,oc)}%)</td><td><span class="down">${pct(rc,oc)}%</span></td><td style="font-family:'Space Mono',monospace">${fmt(tc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(rv)}</td></tr>`;
+    nt=oc-rc,co=costingMap[sku]||0,
+    sr=recRows.filter(p=>p.sku===sku),src=sr.length,
+    srv=sr.reduce((s,p)=>s+p.settlement_value,0),
+    sc=src*co,sp=srv-sc;
+    ch+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td><input type="number" class="costing-input" value="${co}" onchange="updateCosting('${sku}',this.value)"></td><td style="font-family:'Space Mono',monospace">${fmtInt(oc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmtInt(nt)}</td><td style="font-family:'Space Mono',monospace;color:var(--red)">${fmtInt(rc)} (${pct(rc,oc)}%)</td><td><span class="down">${pct(rc,oc)}%</span></td><td style="font-family:'Space Mono',monospace">${fmtInt(src)}</td><td style="font-family:'Space Mono',monospace;color:var(--orange)">${fmt(sc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(srv)}</td><td style="font-family:'Space Mono',monospace;font-weight:700;color:${sp>=0?'var(--green)':'var(--red)'}">${fmt(sp)}</td></tr>`;
   });document.getElementById('pnlCostingBody').innerHTML=ch;
   let uh='';allSkus.forEach(sku=>{
-    const sp=PAYMENTS_DATA.filter(p=>p.sku===sku),rec=sp.filter(p=>p.settlement_value>0),pen=sp.filter(p=>p.settlement_value===0),
-    rv=rec.reduce((s,p)=>s+p.settlement_value,0),avg=rec.length>0?rv/rec.length:0,est=pen.length*avg;
-    uh+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td style="font-family:'Space Mono',monospace">${fmtInt(pen.length)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(rv)}</td><td style="font-family:'Space Mono',monospace;color:var(--orange)">${fmtInt(pen.length)} orders</td><td style="font-family:'Space Mono',monospace;color:var(--cyan)">${fmt(est)}</td></tr>`;
+    const sa=PAYMENTS_DATA.filter(p=>p.sku===sku),
+    sr=sa.filter(p=>p.settlement_value>0),spn=sa.filter(p=>p.settlement_value<=0),
+    rv=sr.reduce((s,p)=>s+p.settlement_value,0),
+    avg=sr.length>0?rv/sr.length:0,est=spn.length*avg;
+    uh+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td style="font-family:'Space Mono',monospace">${fmtInt(spn.length)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(rv)}</td><td style="font-family:'Space Mono',monospace;color:var(--orange)">${fmtInt(spn.length)} orders</td><td style="font-family:'Space Mono',monospace;color:var(--cyan)">${fmt(est)}</td></tr>`;
   });document.getElementById('pnlUpcomingBody').innerHTML=uh;
 }
 function updateCosting(sku,v){costingMap[sku]=parseFloat(v)||0;renderPnl()}
