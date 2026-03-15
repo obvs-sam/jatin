@@ -389,14 +389,18 @@ function goP(p){pP=p;rPT()}
 function rPL(){
 const to=OD.length,tr=RD.length,no=to-tr,del=no,cr=RD.filter(r=>r.rt==='courier_return').length,cu=RD.filter(r=>r.rt==='customer_return').length;
 const recR=PD.filter(p=>p.sv>0),recC=recR.length,totRev=recR.reduce((s,p)=>s+p.sv,0);
+const netSettle=PD.reduce((s,p)=>s+p.sv,0);
 let totCost=0;aS.forEach(sk=>{totCost+=recR.filter(p=>p.sk===sk).length*(cM[sk]||0)});
 const profit=totRev-totCost;
+const netProfit=netSettle-totCost;
 document.getElementById('plS').innerHTML=`
 <div class="sc pur"><div class="sc-l">Total Orders</div><div class="sc-v">${I(to)}</div><div class="sc-s">Net: ${I(del)} · Returns: ${I(tr)}</div></div>
 <div class="sc grn"><div class="sc-l">Payment Received</div><div class="sc-v">${I(recC)}</div><div class="sc-s">+ve settlement rows</div></div>
-<div class="sc cyn"><div class="sc-l">Revenue</div><div class="sc-v">${F(totRev)}</div><div class="sc-s">${I(recC)} × avg ${F(recC>0?totRev/recC:0)}</div></div>
+<div class="sc cyn"><div class="sc-l">Revenue (+ve Rows)</div><div class="sc-v">${F(totRev)}</div><div class="sc-s">${I(recC)} × avg ${F(recC>0?totRev/recC:0)}</div></div>
+<div class="sc blu"><div class="sc-l">Net Settlement (All Rows)</div><div class="sc-v">${F(netSettle)}</div><div class="sc-s">Incl. refunds & negatives</div></div>
 <div class="sc org"><div class="sc-l">Total Costing</div><div class="sc-v">${F(totCost)}</div><div class="sc-s">${I(recC)} received × cost/unit</div></div>
-<div class="sc ${profit>=0?'grn':'red'}"><div class="sc-l">Net Profit / Loss</div><div class="sc-v" style="color:${profit>=0?'var(--grn)':'var(--red)'}">${F(profit)}</div><div class="sc-s">${profit>=0?'<span class="up">Profit</span>':'<span class="dn">Loss</span>'} · Margin: ${P(Math.abs(profit),totRev)}%</div></div>
+<div class="sc ${profit>=0?'grn':'red'}"><div class="sc-l">Profit (on Revenue)</div><div class="sc-v" style="color:${profit>=0?'var(--grn)':'var(--red)'}">${F(profit)}</div><div class="sc-s">${F(totRev)} − ${F(totCost)} · Margin: ${P(Math.abs(profit),totRev)}%</div></div>
+<div class="sc ${netProfit>=0?'grn':'red'}"><div class="sc-l">Profit (on Net Settlement)</div><div class="sc-v" style="color:${netProfit>=0?'var(--grn)':'var(--red)'}">${F(netProfit)}</div><div class="sc-s">${F(netSettle)} − ${F(totCost)} · Margin: ${P(Math.abs(netProfit),Math.abs(netSettle))}%</div></div>
 <div class="sc red"><div class="sc-l">Returns</div><div class="sc-v">${I(tr)}</div><div class="sc-s">RTO: ${I(cr)} (${P(cr,del)}%) · Cust: ${I(cu)} (${P(cu,del)}%) of delivered</div></div>`;
 document.getElementById('plR').innerHTML=`
 <div class="cc"><div class="ci" style="background:var(--org)15;color:var(--org)">🚚</div><div class="cx"><div class="nm">${I(cr)}</div><h4>Courier Returns (RTO)</h4><p>${P(cr,del)}% of delivered orders</p></div></div>
