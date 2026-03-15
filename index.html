@@ -4,761 +4,417 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emitrackon — Sales Command Center</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg-primary:#0a0b0f;
-  --bg-secondary:#12131a;
-  --bg-card:#181921;
-  --bg-card-hover:#1e1f2c;
-  --bg-elevated:#22243a;
-  --border:#2a2c3e;
-  --border-light:#353750;
-  --text-primary:#f0f0f5;
-  --text-secondary:#9395a5;
-  --text-muted:#6b6d80;
-  --accent:#6c5ce7;
-  --accent-glow:#6c5ce740;
-  --green:#00d2a0;
-  --green-bg:#00d2a015;
-  --red:#ff6b6b;
-  --red-bg:#ff6b6b15;
-  --orange:#fdcb6e;
-  --orange-bg:#fdcb6e15;
-  --blue:#74b9ff;
-  --blue-bg:#74b9ff15;
-  --cyan:#00cec9;
-  --sidebar-w:260px;
-  --radius:12px;
-  --radius-sm:8px;
-  --transition:0.2s cubic-bezier(.4,0,.2,1);
+--bg:#06070b;--bg2:#0c0d14;--bg3:#11121b;--bg4:#181a27;--bg5:#1f2235;
+--bdr:#252840;--bdr2:#323660;
+--t1:#f2f3f8;--t2:#a0a3b8;--t3:#6c6f88;
+--ac:#7c6aef;--ac2:#9b8afb;--acg:rgba(124,106,239,0.15);--acg2:rgba(124,106,239,0.35);
+--grn:#34d399;--grn2:rgba(52,211,153,0.12);
+--red:#f87171;--red2:rgba(248,113,113,0.12);
+--org:#fbbf24;--org2:rgba(251,191,36,0.12);
+--blu:#60a5fa;--blu2:rgba(96,165,250,0.12);
+--cyn:#22d3ee;--cyn2:rgba(34,211,238,0.12);
+--side:260px;--r:14px;--rs:8px;--tr:0.22s cubic-bezier(.4,0,.2,1);
 }
-html{font-size:14px;scroll-behavior:smooth}
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--bg-primary);
-  color:var(--text-primary);
-  min-height:100vh;
-  overflow-x:hidden;
-}
-::-webkit-scrollbar{width:6px;height:6px}
+html{font-size:13.5px;scroll-behavior:smooth}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--bdr2)}
+::selection{background:var(--acg2);color:var(--t1)}
 
-/* ═══════════ UPLOAD SCREEN ═══════════ */
-.upload-screen{
-  position:fixed;inset:0;z-index:9999;
-  background:var(--bg-primary);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:24px;
-  transition:opacity 0.5s,transform 0.5s;
-}
-.upload-screen.hidden{opacity:0;transform:scale(1.02);pointer-events:none}
-.upload-brand{text-align:center;margin-bottom:40px}
-.upload-brand h1{
-  font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;
-  background:linear-gradient(135deg,var(--accent),var(--cyan));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:8px;
-}
-.upload-brand p{color:var(--text-muted);font-size:0.9rem;max-width:500px}
-.upload-grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:20px;max-width:1100px;width:100%;margin-bottom:36px;
-}
-.upload-zone{
-  background:var(--bg-card);border:2px dashed var(--border);
-  border-radius:var(--radius);padding:32px 24px;text-align:center;
-  cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden;
-}
-.upload-zone:hover{border-color:var(--accent);background:var(--bg-card-hover);transform:translateY(-2px)}
-.upload-zone.dragover{border-color:var(--accent);background:rgba(108,92,231,0.06);box-shadow:0 0 30px var(--accent-glow)}
-.upload-zone.done{border-color:var(--green);border-style:solid}
-.upload-zone.done .uz-icon{color:var(--green)}
-.upload-zone.done .uz-status{color:var(--green)}
-.uz-icon{font-size:2.5rem;margin-bottom:12px;display:block;transition:color var(--transition)}
-.uz-title{font-weight:700;font-size:1rem;margin-bottom:6px;color:var(--text-primary)}
-.uz-desc{font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
-.uz-status{font-size:0.75rem;font-weight:600;color:var(--text-muted);transition:color var(--transition)}
-.uz-mandatory{margin-top:14px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-.uz-mandatory .m-chip{
-  background:var(--red-bg);border:1px solid #ff6b6b25;color:var(--red);
-  padding:2px 8px;border-radius:12px;font-size:0.65rem;font-weight:600;
-}
-.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.upload-progress-bar{position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--bg-elevated)}
-.upload-progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--cyan));border-radius:0 2px 2px 0;transition:width 0.3s}
-.launch-btn{
-  background:linear-gradient(135deg,var(--accent),#7c5ce7);color:#fff;border:none;
-  padding:14px 48px;border-radius:var(--radius);font-size:1rem;font-weight:700;
-  cursor:pointer;transition:all var(--transition);font-family:'DM Sans',sans-serif;
-  letter-spacing:0.5px;opacity:0.35;pointer-events:none;box-shadow:0 4px 24px var(--accent-glow);
-}
-.launch-btn.ready{opacity:1;pointer-events:auto}
-.launch-btn.ready:hover{transform:translateY(-2px);box-shadow:0 8px 40px var(--accent-glow)}
-.upload-hint{margin-top:16px;font-size:0.75rem;color:var(--text-muted)}
+/* ═══════════ UPLOAD ═══════════ */
+.up-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;transition:opacity .6s,transform .6s}
+.up-screen.bye{opacity:0;transform:scale(1.03);pointer-events:none}
+.up-screen::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 40%,rgba(124,106,239,0.06) 0%,transparent 50%),radial-gradient(circle at 70% 60%,rgba(34,211,238,0.04) 0%,transparent 50%);animation:bgShift 20s ease infinite alternate;pointer-events:none}
+@keyframes bgShift{0%{transform:translate(0,0)}100%{transform:translate(-5%,3%)}}
+.up-brand{text-align:center;margin-bottom:44px;position:relative;z-index:1}
+.up-brand h1{font-family:'JetBrains Mono',monospace;font-size:2.4rem;font-weight:700;background:linear-gradient(135deg,var(--ac),var(--cyn),var(--ac2));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradShift 4s ease infinite;margin-bottom:10px}
+@keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.up-brand p{color:var(--t3);font-size:.95rem;max-width:480px;line-height:1.6}
+.up-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1100px;width:100%;margin-bottom:40px;position:relative;z-index:1}
+.up-zone{background:var(--bg3);border:2px dashed var(--bdr);border-radius:var(--r);padding:30px 20px;text-align:center;cursor:pointer;transition:all var(--tr);position:relative;overflow:hidden}
+.up-zone:hover{border-color:var(--ac);background:var(--bg4);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.up-zone.over{border-color:var(--ac);background:rgba(124,106,239,.08);box-shadow:0 0 40px var(--acg2)}
+.up-zone.ok{border-color:var(--grn);border-style:solid;background:rgba(52,211,153,.03)}
+.up-zone.ok .uz-ic{color:var(--grn)}
+.up-zone.ok .uz-st{color:var(--grn)}
+.uz-ic{font-size:2.6rem;margin-bottom:14px;display:block;transition:all var(--tr)}
+.uz-tt{font-weight:700;font-size:1.05rem;margin-bottom:5px;color:var(--t1)}
+.uz-ds{font-size:.76rem;color:var(--t3);margin-bottom:10px;line-height:1.5}
+.uz-st{font-size:.75rem;font-weight:600;color:var(--t3);transition:color var(--tr);min-height:20px}
+.uz-md{margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.uz-md .mc{background:var(--red2);border:1px solid rgba(248,113,113,.15);color:var(--red);padding:2px 7px;border-radius:10px;font-size:.6rem;font-weight:600}
+.up-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.up-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--bg5)}
+.up-fill{height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--cyn));border-radius:0 2px 2px 0;transition:width .3s}
+.go-btn{background:linear-gradient(135deg,var(--ac),#6851e0);color:#fff;border:none;padding:16px 56px;border-radius:var(--r);font-size:1.05rem;font-weight:700;cursor:pointer;transition:all var(--tr);font-family:'DM Sans',sans-serif;letter-spacing:.3px;opacity:.3;pointer-events:none;box-shadow:0 4px 24px var(--acg);position:relative;z-index:1}
+.go-btn.rdy{opacity:1;pointer-events:auto}
+.go-btn.rdy:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 48px var(--acg2)}
+.up-hint{margin-top:18px;font-size:.73rem;color:var(--t3);position:relative;z-index:1}
 
 /* ═══════════ APP ═══════════ */
-.app-wrap{display:none}
-.app-wrap.visible{display:block}
-.sidebar{
-  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
-  background:var(--bg-secondary);border-right:1px solid var(--border);
-  z-index:100;display:flex;flex-direction:column;transition:transform var(--transition);
-}
-.sidebar-brand{padding:24px 20px;border-bottom:1px solid var(--border)}
-.sidebar-brand h1{
-  font-family:'Space Mono',monospace;font-size:1.15rem;font-weight:700;
-  background:linear-gradient(135deg,var(--accent),var(--cyan));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px;
-}
-.sidebar-brand p{font-size:0.72rem;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:1.5px}
-.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
-.nav-section{font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);padding:16px 12px 8px}
-.nav-item{
-  display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--radius-sm);
-  cursor:pointer;transition:all var(--transition);color:var(--text-secondary);font-size:0.9rem;font-weight:500;
-}
-.nav-item:hover{background:var(--bg-card);color:var(--text-primary)}
-.nav-item.active{background:var(--accent);color:#fff;box-shadow:0 4px 20px var(--accent-glow)}
-.nav-item .icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:1rem}
-.nav-item .badge{
-  margin-left:auto;background:var(--bg-elevated);color:var(--text-muted);
-  font-size:0.7rem;padding:2px 7px;border-radius:10px;font-weight:600;font-family:'Space Mono',monospace;
-}
-.nav-item.active .badge{background:rgba(255,255,255,0.2);color:#fff}
-.sidebar-footer{
-  padding:12px 16px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-muted);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.reload-btn{
-  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);
-  padding:5px 12px;border-radius:6px;font-size:0.7rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all var(--transition);
-}
-.reload-btn:hover{border-color:var(--accent);color:var(--text-primary)}
-.main{margin-left:var(--sidebar-w);min-height:100vh}
-.topbar{
-  position:sticky;top:0;z-index:50;background:var(--bg-primary);border-bottom:1px solid var(--border);
-  padding:16px 32px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);
-}
-.topbar h2{font-size:1.25rem;font-weight:700;letter-spacing:-0.3px}
-.topbar-actions{display:flex;gap:10px;align-items:center}
-.search-box{
-  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:8px 14px;color:var(--text-primary);font-size:0.85rem;width:260px;outline:none;
-  transition:border var(--transition);font-family:'DM Sans',sans-serif;
-}
-.search-box:focus{border-color:var(--accent)}
-.search-box::placeholder{color:var(--text-muted)}
-.content{padding:24px 32px 48px}
-.section{display:none}
-.section.active{display:block}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:28px}
-.stat-card{
-  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:20px;transition:all var(--transition);position:relative;overflow:hidden;
-}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
-.stat-card.purple::before{background:var(--accent)}
-.stat-card.green::before{background:var(--green)}
-.stat-card.red::before{background:var(--red)}
-.stat-card.orange::before{background:var(--orange)}
-.stat-card.blue::before{background:var(--blue)}
-.stat-card.cyan::before{background:var(--cyan)}
-.stat-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
-.stat-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px}
-.stat-value{font-family:'Space Mono',monospace;font-size:1.75rem;font-weight:700;letter-spacing:-1px}
-.stat-sub{font-size:0.78rem;color:var(--text-secondary);margin-top:6px}
-.stat-sub .up{color:var(--green)} .stat-sub .down{color:var(--red)}
-.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
-.table-header h3{font-size:1rem;font-weight:600}
-.table-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.filter-select,.filter-input{
-  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
-  padding:7px 12px;border-radius:var(--radius-sm);font-size:0.8rem;outline:none;font-family:'DM Sans',sans-serif;
-}
-.filter-select:focus,.filter-input:focus{border-color:var(--accent)}
-.table-scroll{overflow-x:auto;max-height:600px;overflow-y:auto}
-table{width:100%;border-collapse:collapse;font-size:0.82rem}
-thead{position:sticky;top:0;z-index:5;background:var(--bg-elevated)}
-th{padding:12px 16px;text-align:left;font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary);white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
-tr:hover td{background:var(--bg-card-hover);color:var(--text-primary)}
-.mandatory{color:var(--red);font-size:0.65rem;font-weight:700;vertical-align:super}
-.badge-tag{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600}
-.badge-green{background:var(--green-bg);color:var(--green)}
-.badge-red{background:var(--red-bg);color:var(--red)}
-.badge-orange{background:var(--orange-bg);color:var(--orange)}
-.badge-blue{background:var(--blue-bg);color:var(--blue)}
-.badge-purple{background:var(--accent-glow);color:var(--accent)}
-.category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
-.cat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px;transition:all var(--transition)}
-.cat-card:hover{border-color:var(--border-light);transform:translateY(-1px)}
-.cat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
-.cat-info h4{font-size:0.95rem;font-weight:600;margin-bottom:4px}
-.cat-info p{font-size:0.78rem;color:var(--text-muted)}
-.cat-info .num{font-family:'Space Mono',monospace;font-size:1.35rem;font-weight:700;margin-bottom:2px}
-.costing-input{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:6px;width:100px;font-family:'Space Mono',monospace;font-size:0.82rem;text-align:right;outline:none}
-.costing-input:focus{border-color:var(--accent)}
-.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)}
-.pagination-btns{display:flex;gap:4px}
-.page-btn{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.78rem;transition:all var(--transition);font-family:'DM Sans',sans-serif}
-.page-btn:hover{border-color:var(--accent);color:var(--text-primary)}
-.page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.page-btn:disabled{opacity:0.3;cursor:not-allowed}
-.mandatory-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px}
-.mandatory-section h4{font-size:0.85rem;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.mandatory-section h4 .dot{width:8px;height:8px;background:var(--red);border-radius:50%;display:inline-block}
-.mandatory-list{display:flex;flex-wrap:wrap;gap:8px}
-.mandatory-chip{background:var(--red-bg);border:1px solid #ff6b6b30;color:var(--red);padding:5px 14px;border-radius:20px;font-size:0.75rem;font-weight:600}
-.progress-bar{height:8px;background:var(--bg-elevated);border-radius:4px;overflow:hidden;margin-top:8px}
-.progress-fill{height:100%;border-radius:4px;transition:width 0.6s ease}
-.return-visual{display:flex;gap:32px;align-items:center;margin-bottom:24px;flex-wrap:wrap}
-.donut-wrap{position:relative;width:160px;height:160px;flex-shrink:0}
-.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.donut-center .num{font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700}
-.donut-center .lbl{font-size:0.7rem;color:var(--text-muted)}
-.legend-items{display:flex;flex-direction:column;gap:12px}
-.legend-item{display:flex;align-items:center;gap:10px}
-.legend-dot{width:12px;height:12px;border-radius:4px;flex-shrink:0}
-.legend-label{font-size:0.85rem;color:var(--text-secondary)}
-.legend-val{font-family:'Space Mono',monospace;font-weight:700;font-size:0.95rem;margin-left:auto}
-.sku-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
-.sku-tab{padding:6px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;cursor:pointer;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);transition:all var(--transition)}
-.sku-tab:hover{border-color:var(--accent);color:var(--text-primary)}
-.sku-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.menu-toggle{display:none;background:none;border:none;color:var(--text-primary);font-size:1.4rem;cursor:pointer;padding:4px}
-@media(max-width:860px){
-  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
-  .main{margin-left:0}.menu-toggle{display:block}.content{padding:16px}
-  .topbar{padding:12px 16px}.stats-grid{grid-template-columns:repeat(2,1fr)}
-  .upload-grid{grid-template-columns:1fr 1fr}
-}
-@media(max-width:520px){.upload-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.animate-in{animation:fadeUp 0.35s ease forwards}
-.animate-in:nth-child(1){animation-delay:0.04s}.animate-in:nth-child(2){animation-delay:0.08s}
-.animate-in:nth-child(3){animation-delay:0.12s}.animate-in:nth-child(4){animation-delay:0.16s}
-.animate-in:nth-child(5){animation-delay:0.2s}.animate-in:nth-child(6){animation-delay:0.24s}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.pulse{animation:pulse 2s infinite}
+.app{display:none}.app.on{display:flex}
+.side{position:fixed;top:0;left:0;bottom:0;width:var(--side);background:var(--bg2);border-right:1px solid var(--bdr);z-index:100;display:flex;flex-direction:column;transition:transform var(--tr)}
+.side-top{padding:22px 20px;border-bottom:1px solid var(--bdr)}
+.side-top h1{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,var(--ac),var(--cyn));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.side-top p{font-size:.65rem;color:var(--t3);margin-top:3px;text-transform:uppercase;letter-spacing:2px}
+.side-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+.ns{font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--t3);padding:18px 12px 6px;font-weight:600}
+.ni{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:var(--rs);cursor:pointer;transition:all var(--tr);color:var(--t2);font-size:.88rem;font-weight:500}
+.ni:hover{background:var(--bg4);color:var(--t1)}
+.ni.on{background:linear-gradient(135deg,var(--ac),#6851e0);color:#fff;box-shadow:0 4px 20px var(--acg2)}
+.ni .ic{width:18px;text-align:center;font-size:.95rem}
+.ni .bd{margin-left:auto;background:var(--bg5);color:var(--t3);font-size:.65rem;padding:2px 7px;border-radius:8px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.ni.on .bd{background:rgba(255,255,255,.2);color:#fff}
+.side-ft{padding:12px 14px;border-top:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.side-ft span{font-size:.68rem;color:var(--t3)}
+.rbtn{background:var(--bg5);border:1px solid var(--bdr);color:var(--t2);padding:5px 12px;border-radius:6px;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all var(--tr)}
+.rbtn:hover{border-color:var(--ac);color:var(--t1)}
+
+.mn{margin-left:var(--side);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.tbar{position:sticky;top:0;z-index:50;background:rgba(6,7,11,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+.tbar h2{font-size:1.2rem;font-weight:700;letter-spacing:-.3px}
+.tbar-r{display:flex;gap:10px;align-items:center}
+.sb{background:var(--bg4);border:1px solid var(--bdr);border-radius:var(--rs);padding:8px 14px;color:var(--t1);font-size:.83rem;width:240px;outline:none;transition:all var(--tr);font-family:'DM Sans',sans-serif}
+.sb:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acg)}
+.sb::placeholder{color:var(--t3)}
+.ct{padding:22px 28px 48px;flex:1}
+
+.sec{display:none}.sec.on{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════ STAT CARDS ═══════════ */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.sc{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);padding:18px 20px;transition:all var(--tr);position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sc.pur::after{background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.sc.grn::after{background:linear-gradient(90deg,#10b981,var(--grn))}
+.sc.red::after{background:linear-gradient(90deg,#ef4444,var(--red))}
+.sc.org::after{background:linear-gradient(90deg,#f59e0b,var(--org))}
+.sc.blu::after{background:linear-gradient(90deg,#3b82f6,var(--blu))}
+.sc.cyn::after{background:linear-gradient(90deg,#06b6d4,var(--cyn))}
+.sc:hover{border-color:var(--bdr2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.sc-l{font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3);margin-bottom:8px;font-weight:600}
+.sc-v{font-family:'JetBrains Mono',monospace;font-size:1.65rem;font-weight:700;letter-spacing:-1px;line-height:1.2}
+.sc-s{font-size:.75rem;color:var(--t2);margin-top:5px}
+.sc-s .up{color:var(--grn);font-weight:600}.sc-s .dn{color:var(--red);font-weight:600}
+
+/* ═══════════ TABLES ═══════════ */
+.tc{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.th{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:10px}
+.th h3{font-size:.95rem;font-weight:700}
+.tf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fi,.fs{background:var(--bg5);border:1px solid var(--bdr);color:var(--t1);padding:7px 12px;border-radius:var(--rs);font-size:.78rem;outline:none;font-family:'DM Sans',sans-serif;transition:all var(--tr)}
+.fi:focus,.fs:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acg)}
+.ts{overflow-x:auto;max-height:560px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead{position:sticky;top:0;z-index:5;background:var(--bg5)}
+th{padding:11px 14px;text-align:left;font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3);border-bottom:1px solid var(--bdr);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid rgba(37,40,64,.5);color:var(--t2);white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+tr:hover td{background:rgba(31,34,53,.6);color:var(--t1)}
+.mn-s{color:var(--red);font-size:.6rem;font-weight:700;vertical-align:super}
+.bt{display:inline-flex;padding:3px 10px;border-radius:16px;font-size:.68rem;font-weight:700;letter-spacing:.2px}
+.bt-g{background:var(--grn2);color:var(--grn)}.bt-r{background:var(--red2);color:var(--red)}
+.bt-o{background:var(--org2);color:var(--org)}.bt-b{background:var(--blu2);color:var(--blu)}
+.bt-p{background:var(--acg);color:var(--ac2)}
+
+/* ═══════════ CATEGORY CARDS ═══════════ */
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-bottom:22px}
+.cc{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);padding:18px 22px;display:flex;align-items:center;gap:15px;transition:all var(--tr)}
+.cc:hover{border-color:var(--bdr2);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.ci{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.cx h4{font-size:.9rem;font-weight:700;margin-bottom:3px}
+.cx p{font-size:.75rem;color:var(--t3);line-height:1.4}
+.cx .nm{font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:700;margin-bottom:2px}
+
+/* ═══════════ MISC ═══════════ */
+.pb{height:6px;background:var(--bg5);border-radius:3px;overflow:hidden;margin-top:8px}
+.pf{height:100%;border-radius:3px;transition:width .6s ease}
+.ci-i{background:var(--bg5);border:1px solid var(--bdr);color:var(--t1);padding:6px 10px;border-radius:6px;width:95px;font-family:'JetBrains Mono',monospace;font-size:.8rem;text-align:right;outline:none;transition:all var(--tr)}
+.ci-i:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acg)}
+.pg{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--bdr);font-size:.78rem;color:var(--t3)}
+.pbs{display:flex;gap:3px}
+.pbtn{background:var(--bg5);border:1px solid var(--bdr);color:var(--t2);padding:5px 11px;border-radius:6px;cursor:pointer;font-size:.75rem;transition:all var(--tr);font-family:'DM Sans',sans-serif}
+.pbtn:hover{border-color:var(--ac);color:var(--t1)}.pbtn.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pbtn:disabled{opacity:.25;cursor:not-allowed}
+.ms{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);padding:16px 20px;margin-bottom:20px}
+.ms h4{font-size:.82rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ms h4 .dt{width:7px;height:7px;background:var(--red);border-radius:50%}
+.ml{display:flex;flex-wrap:wrap;gap:6px}
+.mp{background:var(--red2);border:1px solid rgba(248,113,113,.15);color:var(--red);padding:4px 12px;border-radius:16px;font-size:.7rem;font-weight:700}
+.rv{display:flex;gap:28px;align-items:center;margin-bottom:22px;flex-wrap:wrap}
+.dw{position:relative;width:150px;height:150px;flex-shrink:0}
+.dc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.dc .nm{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:700}
+.dc .lb{font-size:.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+.li{display:flex;flex-direction:column;gap:10px}
+.lit{display:flex;align-items:center;gap:10px}
+.ld{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.ll{font-size:.82rem;color:var(--t2)}.lv{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.9rem;margin-left:auto}
+.st{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:18px}
+.stb{padding:5px 14px;border-radius:16px;font-size:.75rem;font-weight:700;cursor:pointer;background:var(--bg4);border:1px solid var(--bdr);color:var(--t2);transition:all var(--tr)}
+.stb:hover{border-color:var(--ac);color:var(--t1)}.stb.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+
+/* ═══════════ SUMMARY ROW ═══════════ */
+.sum-row td{background:var(--bg5)!important;font-weight:700;color:var(--t1)!important;border-top:2px solid var(--ac)}
+
+/* ═══════════ EXPORT BTN ═══════════ */
+.exp{background:var(--bg5);border:1px solid var(--bdr);color:var(--t2);padding:6px 14px;border-radius:var(--rs);font-size:.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all var(--tr);font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.exp:hover{border-color:var(--grn);color:var(--grn);background:var(--grn2)}
+
+/* ═══════════ TOAST ═══════════ */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r);padding:14px 22px;color:var(--t1);font-size:.85rem;font-weight:600;z-index:9999;transform:translateY(100px);opacity:0;transition:all .35s ease;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-left:4px solid var(--grn)}
+
+/* ═══════════ MOBILE ═══════════ */
+.mt{display:none;background:none;border:none;color:var(--t1);font-size:1.3rem;cursor:pointer}
+@media(max-width:900px){.side{transform:translateX(-100%)}.side.op{transform:translateX(0)}.mn{margin-left:0}.mt{display:block}.ct{padding:14px}.tbar{padding:12px 14px}.sg{grid-template-columns:repeat(2,1fr)}.up-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.up-grid{grid-template-columns:1fr}.sg{grid-template-columns:1fr}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pls{animation:pulse 1.8s infinite}
 </style>
 </head>
 <body>
 
 <!-- ═══════════ UPLOAD SCREEN ═══════════ -->
-<div class="upload-screen" id="uploadScreen">
-  <div class="upload-brand">
-    <h1>⚡ EMITRACKON</h1>
-    <p>Upload your 4 Excel sheets to power up the Sales Command Center. Drag & drop or click to browse.</p>
-  </div>
-  <div class="upload-grid">
-    <div class="upload-zone" id="zone-orders">
-      <span class="uz-icon">📦</span>
-      <div class="uz-title">Order Received</div>
-      <div class="uz-desc">All received orders data</div>
-      <div class="uz-status" id="status-orders">Click or drag .xlsx file</div>
-      <div class="uz-mandatory">
-        <span class="m-chip">order_id</span><span class="m-chip">order_date</span><span class="m-chip">sku</span><span class="m-chip">quantity</span><span class="m-chip">order_item_id</span>
-      </div>
-      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'orders')">
-      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-orders"></div></div>
-    </div>
-    <div class="upload-zone" id="zone-returns">
-      <span class="uz-icon">↩️</span>
-      <div class="uz-title">Order Return</div>
-      <div class="uz-desc">Return & RTO data</div>
-      <div class="uz-status" id="status-returns">Click or drag .xlsx file</div>
-      <div class="uz-mandatory">
-        <span class="m-chip">order_item_id</span><span class="m-chip">return_type</span><span class="m-chip">sku</span><span class="m-chip">quantity</span>
-      </div>
-      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'returns')">
-      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-returns"></div></div>
-    </div>
-    <div class="upload-zone" id="zone-payments">
-      <span class="uz-icon">💰</span>
-      <div class="uz-title">Payment Sheet</div>
-      <div class="uz-desc">Settlement & GST/TDS data</div>
-      <div class="uz-status" id="status-payments">Click or drag .xlsx file</div>
-      <div class="uz-mandatory">
-        <span class="m-chip">Settlement Value</span><span class="m-chip">GST+TCS</span><span class="m-chip">TDS</span><span class="m-chip">Order ID</span>
-      </div>
-      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'payments')">
-      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-payments"></div></div>
-    </div>
-    <div class="upload-zone" id="zone-pnl">
-      <span class="uz-icon">📈</span>
-      <div class="uz-title">PNL Sheet</div>
-      <div class="uz-desc">SKU costing data</div>
-      <div class="uz-status" id="status-pnl">Click or drag .xlsx file</div>
-      <div class="uz-mandatory">
-        <span class="m-chip">SKU</span><span class="m-chip">Costing</span>
-      </div>
-      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this,'pnl')">
-      <div class="upload-progress-bar"><div class="upload-progress-fill" id="prog-pnl"></div></div>
-    </div>
-  </div>
-  <button class="launch-btn" id="launchBtn" onclick="launchDashboard()">🚀 Launch Dashboard</button>
-  <div class="upload-hint">All processing happens in your browser — no data is sent anywhere.</div>
+<div class="up-screen" id="US">
+<div class="up-brand"><h1>⚡ EMITRACKON</h1><p>Upload your 4 Excel sheets to power up the Sales Command Center. Drag & drop or click to browse — everything stays in your browser.</p></div>
+<div class="up-grid">
+<div class="up-zone" id="z-orders"><span class="uz-ic">📦</span><div class="uz-tt">Order Received</div><div class="uz-ds">All received orders</div><div class="uz-st" id="s-orders">Click or drop .xlsx</div><div class="uz-md"><span class="mc">order_id</span><span class="mc">order_date</span><span class="mc">sku</span><span class="mc">quantity</span><span class="mc">order_item_id</span></div><input type="file" accept=".xlsx,.xls,.csv" onchange="hf(this,'orders')"><div class="up-bar"><div class="up-fill" id="p-orders"></div></div></div>
+<div class="up-zone" id="z-returns"><span class="uz-ic">↩️</span><div class="uz-tt">Order Return</div><div class="uz-ds">Return & RTO data</div><div class="uz-st" id="s-returns">Click or drop .xlsx</div><div class="uz-md"><span class="mc">order_item_id</span><span class="mc">return_type</span><span class="mc">sku</span><span class="mc">quantity</span></div><input type="file" accept=".xlsx,.xls,.csv" onchange="hf(this,'returns')"><div class="up-bar"><div class="up-fill" id="p-returns"></div></div></div>
+<div class="up-zone" id="z-payments"><span class="uz-ic">💰</span><div class="uz-tt">Payment Sheet</div><div class="uz-ds">Settlement & GST/TDS</div><div class="uz-st" id="s-payments">Click or drop .xlsx</div><div class="uz-md"><span class="mc">Settlement</span><span class="mc">GST+TCS</span><span class="mc">TDS</span><span class="mc">Order ID</span></div><input type="file" accept=".xlsx,.xls,.csv" onchange="hf(this,'payments')"><div class="up-bar"><div class="up-fill" id="p-payments"></div></div></div>
+<div class="up-zone" id="z-pnl"><span class="uz-ic">📈</span><div class="uz-tt">PNL Sheet</div><div class="uz-ds">SKU costing data</div><div class="uz-st" id="s-pnl">Click or drop .xlsx</div><div class="uz-md"><span class="mc">SKU</span><span class="mc">Costing</span></div><input type="file" accept=".xlsx,.xls,.csv" onchange="hf(this,'pnl')"><div class="up-bar"><div class="up-fill" id="p-pnl"></div></div></div>
+</div>
+<button class="go-btn" id="goBtn" onclick="launch()">🚀 Launch Dashboard</button>
+<div class="up-hint">🔒 100% private — zero data leaves your device</div>
 </div>
 
 <!-- ═══════════ APP ═══════════ -->
-<div class="app-wrap" id="appWrap">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand"><h1>⚡ EMITRACKON</h1><p>Sales Command Center</p></div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">Analytics</div>
-      <div class="nav-item active" data-section="dashboard" onclick="switchSection('dashboard')"><span class="icon">📊</span> Dashboard</div>
-      <div class="nav-section">Management</div>
-      <div class="nav-item" data-section="orders" onclick="switchSection('orders')"><span class="icon">📦</span> Orders Received<span class="badge" id="ordersCount">0</span></div>
-      <div class="nav-item" data-section="returns" onclick="switchSection('returns')"><span class="icon">↩️</span> Order Returns<span class="badge" id="returnsCount">0</span></div>
-      <div class="nav-item" data-section="payments" onclick="switchSection('payments')"><span class="icon">💰</span> Payment Sheet<span class="badge" id="paymentsCount">0</span></div>
-      <div class="nav-item" data-section="pnl" onclick="switchSection('pnl')"><span class="icon">📈</span> PNL Sheet</div>
-    </nav>
-    <div class="sidebar-footer"><span>v1.0</span><button class="reload-btn" onclick="reloadData()">↻ Re-upload</button></div>
-  </aside>
-  <div class="main">
-    <div class="topbar">
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-        <h2 id="pageTitle">Dashboard</h2>
-      </div>
-      <div class="topbar-actions"><input type="text" class="search-box" id="globalSearch" placeholder="Search orders, SKU, ID..." oninput="handleGlobalSearch(this.value)"></div>
-    </div>
-    <div class="content">
-      <!-- DASHBOARD -->
-      <div class="section active" id="sec-dashboard">
-        <div class="stats-grid" id="dashStats"></div>
-        <div class="category-grid" id="dashSkuOverview"></div>
-        <div class="table-container">
-          <div class="table-header"><h3>Recent Orders</h3></div>
-          <div class="table-scroll"><table><thead><tr><th>Order ID</th><th>Date</th><th>SKU</th><th>Product</th><th>Qty</th><th>Status</th></tr></thead><tbody id="dashRecentOrders"></tbody></table></div>
-        </div>
-      </div>
-      <!-- ORDERS -->
-      <div class="section" id="sec-orders">
-        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">order_id</span><span class="mandatory-chip">order_date</span><span class="mandatory-chip">sku</span><span class="mandatory-chip">fsn</span><span class="mandatory-chip">product_title</span><span class="mandatory-chip">quantity</span><span class="mandatory-chip">order_item_id</span></div></div>
-        <div class="stats-grid" id="orderStats"></div>
-        <div class="sku-tabs" id="orderSkuTabs"></div>
-        <div class="table-container">
-          <div class="table-header"><h3>All Orders Received</h3><div class="table-filters"><input type="text" class="filter-input" id="orderSearchInput" placeholder="Search..." oninput="renderOrdersTable()"><select class="filter-select" id="orderSkuFilter" onchange="renderOrdersTable()"><option value="">All SKUs</option></select></div></div>
-          <div class="table-scroll"><table><thead><tr><th>#</th><th>Order ID <span class="mandatory">*</span></th><th>Date <span class="mandatory">*</span></th><th>SKU <span class="mandatory">*</span></th><th>FSN</th><th>Product Title</th><th>Qty</th><th>Item ID <span class="mandatory">*</span></th><th>Return?</th></tr></thead><tbody id="ordersTableBody"></tbody></table></div>
-          <div class="pagination" id="ordersPagination"></div>
-        </div>
-      </div>
-      <!-- RETURNS -->
-      <div class="section" id="sec-returns">
-        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">order_item_id</span><span class="mandatory-chip">return_type</span><span class="mandatory-chip">sku</span><span class="mandatory-chip">product_title</span><span class="mandatory-chip">quantity</span></div></div>
-        <div class="stats-grid" id="returnStats"></div>
-        <div class="return-visual" id="returnVisual"></div>
-        <div class="category-grid" id="returnCategoryCards"></div>
-        <div class="table-container">
-          <div class="table-header"><h3>All Returns</h3><div class="table-filters"><select class="filter-select" id="returnTypeFilter" onchange="renderReturnsTable()"><option value="">All Types</option><option value="courier_return">Courier Return (RTO)</option><option value="customer_return">Customer Return</option></select><select class="filter-select" id="returnSkuFilter" onchange="renderReturnsTable()"><option value="">All SKUs</option></select></div></div>
-          <div class="table-scroll"><table><thead><tr><th>#</th><th>Item ID <span class="mandatory">*</span></th><th>Return Type <span class="mandatory">*</span></th><th>SKU</th><th>Product Title</th><th>Qty</th><th>Matched Order</th></tr></thead><tbody id="returnsTableBody"></tbody></table></div>
-          <div class="pagination" id="returnsPagination"></div>
-        </div>
-      </div>
-      <!-- PAYMENTS -->
-      <div class="section" id="sec-payments">
-        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">Bank Settlement Value</span><span class="mandatory-chip">GST + TCS</span><span class="mandatory-chip">TDS</span><span class="mandatory-chip">Order ID</span><span class="mandatory-chip">Order Item ID</span><span class="mandatory-chip">Seller SKU</span></div></div>
-        <div class="stats-grid" id="paymentStats"></div>
-        <div class="category-grid" id="paymentSkuCards"></div>
-        <div class="table-container">
-          <div class="table-header"><h3>Payment Details</h3><div class="table-filters"><select class="filter-select" id="paymentStatusFilter" onchange="renderPaymentsTable()"><option value="">All</option><option value="received">Payment Received</option><option value="pending">Payment Pending (₹0)</option><option value="negative">Negative / Refund</option></select><select class="filter-select" id="paymentSkuFilter" onchange="renderPaymentsTable()"><option value="">All SKUs</option></select></div></div>
-          <div class="table-scroll"><table><thead><tr><th>#</th><th>Order ID <span class="mandatory">*</span></th><th>Item ID</th><th>SKU</th><th>Settlement ₹</th><th>GST+TCS ₹</th><th>TDS ₹</th><th>Status</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div>
-          <div class="pagination" id="paymentsPagination"></div>
-        </div>
-      </div>
-      <!-- PNL -->
-      <div class="section" id="sec-pnl">
-        <div class="mandatory-section"><h4><span class="dot"></span> Mandatory Fields in Excel</h4><div class="mandatory-list"><span class="mandatory-chip">SKU</span><span class="mandatory-chip">Costing (Manual Input)</span></div></div>
-        <div class="stats-grid" id="pnlStats"></div>
-        <div class="category-grid" id="pnlReturnBreakdown"></div>
-        <div class="table-container" style="margin-bottom:24px">
-          <div class="table-header"><h3>SKU-wise Costing (Editable)</h3><span style="font-size:0.75rem;color:var(--text-muted)">Admin can manually update costing</span></div>
-          <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Costing ₹</th><th>Total Orders</th><th>Net Orders</th><th>Returns</th><th>Return %</th><th>Received</th><th>Total Cost</th><th>Revenue</th><th>Profit/Loss</th></tr></thead><tbody id="pnlCostingBody"></tbody></table></div>
-        </div>
-        <div class="table-container">
-          <div class="table-header"><h3>Upcoming Payments by SKU</h3></div>
-          <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Pending Orders</th><th>Received ₹</th><th>Pending ₹</th><th>Est. Pending Value</th></tr></thead><tbody id="pnlUpcomingBody"></tbody></table></div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="app" id="APP">
+<aside class="side" id="side">
+<div class="side-top"><h1>⚡ EMITRACKON</h1><p>Sales Command Center</p></div>
+<nav class="side-nav">
+<div class="ns">Overview</div>
+<div class="ni on" data-s="dash" onclick="go('dash')"><span class="ic">📊</span>Dashboard</div>
+<div class="ns">Sheets</div>
+<div class="ni" data-s="ord" onclick="go('ord')"><span class="ic">📦</span>Orders Received<span class="bd" id="nOrd">0</span></div>
+<div class="ni" data-s="ret" onclick="go('ret')"><span class="ic">↩️</span>Order Returns<span class="bd" id="nRet">0</span></div>
+<div class="ni" data-s="pay" onclick="go('pay')"><span class="ic">💰</span>Payment Sheet<span class="bd" id="nPay">0</span></div>
+<div class="ni" data-s="pnl" onclick="go('pnl')"><span class="ic">📈</span>PNL Sheet</div>
+</nav>
+<div class="side-ft"><span>v2.0 Final</span><button class="rbtn" onclick="reload()">↻ Re-upload</button></div>
+</aside>
+<div class="mn">
+<div class="tbar">
+<div style="display:flex;align-items:center;gap:12px"><button class="mt" onclick="document.getElementById('side').classList.toggle('op')">☰</button><h2 id="pgT">Dashboard</h2></div>
+<div class="tbar-r"><input type="text" class="sb" id="gSearch" placeholder="Search orders, SKU, ID..." oninput="gSrch(this.value)"></div>
 </div>
+<div class="ct">
+
+<!-- DASHBOARD -->
+<div class="sec on" id="sec-dash"><div class="sg" id="dS"></div><div class="cg" id="dSku"></div>
+<div class="tc"><div class="th"><h3>📋 Recent Orders</h3></div><div class="ts"><table><thead><tr><th>Order ID</th><th>Date</th><th>SKU</th><th>Product</th><th>Qty</th><th>Status</th></tr></thead><tbody id="dRec"></tbody></table></div></div></div>
+
+<!-- ORDERS -->
+<div class="sec" id="sec-ord">
+<div class="ms"><h4><span class="dt"></span>Mandatory Excel Fields</h4><div class="ml"><span class="mp">order_id</span><span class="mp">order_date</span><span class="mp">sku</span><span class="mp">fsn</span><span class="mp">product_title</span><span class="mp">quantity</span><span class="mp">order_item_id</span></div></div>
+<div class="sg" id="oS"></div><div class="st" id="oTabs"></div>
+<div class="tc"><div class="th"><h3>All Orders</h3><div class="tf"><input type="text" class="fi" id="oSi" placeholder="Search..." oninput="rOT()"><select class="fs" id="oSf" onchange="rOT()"><option value="">All SKUs</option></select></div></div>
+<div class="ts"><table><thead><tr><th>#</th><th>Order ID <span class="mn-s">*</span></th><th>Date</th><th>SKU <span class="mn-s">*</span></th><th>FSN</th><th>Product</th><th>Qty</th><th>Item ID <span class="mn-s">*</span></th><th>Return?</th></tr></thead><tbody id="oTB"></tbody></table></div>
+<div class="pg" id="oPg"></div></div></div>
+
+<!-- RETURNS -->
+<div class="sec" id="sec-ret">
+<div class="ms"><h4><span class="dt"></span>Mandatory Excel Fields</h4><div class="ml"><span class="mp">order_item_id</span><span class="mp">return_type</span><span class="mp">sku</span><span class="mp">product_title</span><span class="mp">quantity</span></div></div>
+<div class="sg" id="rS"></div><div class="rv" id="rV"></div><div class="cg" id="rC"></div>
+<div class="tc"><div class="th"><h3>All Returns</h3><div class="tf"><select class="fs" id="rTf" onchange="rRT()"><option value="">All Types</option><option value="courier_return">Courier (RTO)</option><option value="customer_return">Customer Return</option></select><select class="fs" id="rSf" onchange="rRT()"><option value="">All SKUs</option></select></div></div>
+<div class="ts"><table><thead><tr><th>#</th><th>Item ID <span class="mn-s">*</span></th><th>Type <span class="mn-s">*</span></th><th>SKU</th><th>Product</th><th>Qty</th><th>Match</th></tr></thead><tbody id="rTB"></tbody></table></div>
+<div class="pg" id="rPg"></div></div></div>
+
+<!-- PAYMENTS -->
+<div class="sec" id="sec-pay">
+<div class="ms"><h4><span class="dt"></span>Mandatory Excel Fields</h4><div class="ml"><span class="mp">Settlement Value</span><span class="mp">GST+TCS</span><span class="mp">TDS</span><span class="mp">Order ID</span><span class="mp">Order Item ID</span><span class="mp">Seller SKU</span></div></div>
+<div class="sg" id="pS"></div><div class="cg" id="pSku"></div>
+<div class="tc"><div class="th"><h3>Payment Details</h3><div class="tf"><select class="fs" id="pFi" onchange="rPT()"><option value="">All</option><option value="r">Received (+ve)</option><option value="p">Pending (₹0)</option><option value="n">Negative</option></select><select class="fs" id="pSf" onchange="rPT()"><option value="">All SKUs</option></select></div></div>
+<div class="ts"><table><thead><tr><th>#</th><th>Order ID <span class="mn-s">*</span></th><th>Item ID</th><th>SKU</th><th>Settlement ₹</th><th>GST+TCS ₹</th><th>TDS ₹</th><th>Status</th></tr></thead><tbody id="pTB"></tbody></table></div>
+<div class="pg" id="pPg"></div></div></div>
+
+<!-- PNL -->
+<div class="sec" id="sec-pnl">
+<div class="ms"><h4><span class="dt"></span>Mandatory Excel Fields</h4><div class="ml"><span class="mp">SKU</span><span class="mp">Costing (Admin Input)</span></div></div>
+<div class="sg" id="plS"></div><div class="cg" id="plR"></div>
+<div class="tc" style="margin-bottom:20px"><div class="th"><h3>SKU-wise P&L (Editable Costing)</h3><span style="font-size:.72rem;color:var(--t3)">Change costing → profit updates live</span></div>
+<div class="ts"><table><thead><tr><th>SKU</th><th>Cost/Unit ₹</th><th>Total Ord.</th><th>Net Ord.</th><th>Returns</th><th>Ret %</th><th>Received</th><th>Total Cost</th><th>Revenue</th><th>Profit/Loss</th></tr></thead><tbody id="plTB"></tbody></table></div></div>
+<div class="tc"><div class="th"><h3>Upcoming Payments by SKU</h3></div>
+<div class="ts"><table><thead><tr><th>SKU</th><th>Pending Rows</th><th>Received ₹</th><th>Pending Rows</th><th>Est. Pending ₹</th></tr></thead><tbody id="plUP"></tbody></table></div></div></div>
+
+</div></div></div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-let ORDERS_DATA=[],RETURNS_DATA=[],PAYMENTS_DATA=[],COSTING_DATA=[];
-const uploadState={orders:false,returns:false,payments:false,pnl:false};
-const ROWS_PER_PAGE=50;
-let currentOrderPage=1,currentReturnPage=1,currentPaymentPage=1,activeSkuFilter='';
-let returnItemMap={},orderItemMap={},costingMap={},allSkus=[];
+// ═══════════ DATA ═══════════
+let OD=[],RD=[],PD=[],CD=[];
+const us={orders:0,returns:0,payments:0,pnl:0};
+const PP=50;let oP=1,rP=1,pP=1,aSF='';
+let riM={},oiM={},cM={},aS=[];
 
-// ═══════════ DRAG & DROP ═══════════
-document.querySelectorAll('.upload-zone').forEach(zone=>{
-  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover')});
-  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
-  zone.addEventListener('drop',e=>{
-    e.preventDefault();zone.classList.remove('dragover');
-    const f=e.dataTransfer.files[0];
-    if(f){processFile(f,zone.id.replace('zone-',''))}
-  });
+// ═══════════ TOAST ═══════════
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.className='toast ok show';setTimeout(()=>t.classList.remove('show'),2800)}
+
+// ═══════════ UPLOAD ═══════════
+document.querySelectorAll('.up-zone').forEach(z=>{
+z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});
+z.addEventListener('dragleave',()=>z.classList.remove('over'));
+z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');if(e.dataTransfer.files[0])pf(e.dataTransfer.files[0],z.id.replace('z-',''))});
 });
-
-function handleFile(inp,key){if(inp.files[0])processFile(inp.files[0],key)}
-
-function processFile(file,key){
-  const zone=document.getElementById('zone-'+key);
-  const status=document.getElementById('status-'+key);
-  const prog=document.getElementById('prog-'+key);
-  status.textContent='Processing...';status.classList.add('pulse');prog.style.width='30%';
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      prog.style.width='60%';
-      const data=new Uint8Array(e.target.result);
-      const wb=XLSX.read(data,{type:'array',cellDates:true});
-      const sh=wb.Sheets[wb.SheetNames[0]];
-      const json=XLSX.utils.sheet_to_json(sh,{defval:''});
-      prog.style.width='80%';
-      if(key==='orders')parseOrders(json);
-      else if(key==='returns')parseReturns(json);
-      else if(key==='payments')parsePayments(json);
-      else if(key==='pnl')parsePnl(json);
-      prog.style.width='100%';zone.classList.add('done');status.classList.remove('pulse');
-      uploadState[key]=true;
-      const c={orders:ORDERS_DATA.length,returns:RETURNS_DATA.length,payments:PAYMENTS_DATA.length,pnl:COSTING_DATA.length};
-      status.textContent='✓ '+c[key]+' rows loaded';
-      checkAllUploaded();
-    }catch(err){status.textContent='✗ Error: '+err.message;status.classList.remove('pulse');prog.style.width='0';console.error(err)}
-  };
-  reader.readAsArrayBuffer(file);
+function hf(i,k){if(i.files[0])pf(i.files[0],k)}
+function pf(file,k){
+const z=document.getElementById('z-'+k),st=document.getElementById('s-'+k),pr=document.getElementById('p-'+k);
+st.textContent='Reading...';st.classList.add('pls');pr.style.width='30%';
+const r=new FileReader();
+r.onload=function(e){try{
+pr.style.width='60%';const d=new Uint8Array(e.target.result),wb=XLSX.read(d,{type:'array',cellDates:true}),sh=wb.Sheets[wb.SheetNames[0]],j=XLSX.utils.sheet_to_json(sh,{defval:''});
+pr.style.width='80%';
+if(k==='orders')pO(j);else if(k==='returns')pR(j);else if(k==='payments')pPa(j);else if(k==='pnl')pPn(j);
+pr.style.width='100%';z.classList.add('ok');st.classList.remove('pls');us[k]=1;
+const c={orders:OD.length,returns:RD.length,payments:PD.length,pnl:CD.length};
+st.textContent='✓ '+c[k]+' rows';chk();
+}catch(err){st.textContent='✗ '+err.message;st.classList.remove('pls');pr.style.width='0'}};
+r.readAsArrayBuffer(file);
 }
 
 // ═══════════ PARSERS ═══════════
-function findCol(row,kws){
-  const keys=Object.keys(row);
-  for(const kw of kws){const m=keys.find(k=>k.toLowerCase().replace(/[\s_\-\.]+/g,'').includes(kw.toLowerCase().replace(/[\s_\-\.]+/g,'')));if(m)return m}
-  return null;
-}
-function cleanSku(v){return String(v||'').replace(/"/g,'').replace(/SKU:/gi,'').trim()}
-
-function parseOrders(json){
-  if(!json.length)return;const r=json[0];
-  const c1=findCol(r,['order_id','orderid']),c2=findCol(r,['order_date','orderdate','date']),c3=findCol(r,['sku','seller_sku','sellersku']),
-  c4=findCol(r,['fsn']),c5=findCol(r,['product_title','producttitle','title','product']),
-  c6=findCol(r,['quantity','qty']),c7=findCol(r,['order_item_id','orderitemid','item_id']);
-  ORDERS_DATA=json.filter(r=>r[c1]).map(r=>({
-    order_id:String(r[c1]||''),order_date:r[c2] instanceof Date?r[c2].toISOString().replace('T',' ').slice(0,19):String(r[c2]||''),
-    sku:cleanSku(r[c3]),fsn:String(r[c4]||''),product_title:String(r[c5]||'').replace(/"/g,'').slice(0,80),
-    quantity:parseInt(r[c6])||0,order_item_id:String(r[c7]||'')
-  }));
-}
-function parseReturns(json){
-  if(!json.length)return;const r=json[0];
-  const c1=findCol(r,['order_item_id','orderitemid','item_id']),c2=findCol(r,['return_type','returntype','type']),
-  c3=findCol(r,['sku','seller_sku']),c4=findCol(r,['product_title','title','product']),c5=findCol(r,['quantity','qty']);
-  RETURNS_DATA=json.filter(r=>r[c1]).map(r=>({
-    order_item_id:String(r[c1]||''),return_type:String(r[c2]||''),sku:cleanSku(r[c3]),
-    product_title:String(r[c4]||'').replace(/"/g,'').slice(0,80),quantity:parseInt(r[c5])||0
-  }));
-}
-function parsePayments(json){
-  if(!json.length)return;const r=json[0];
-  const c1=findCol(r,['settlement','banksettlement']),c2=findCol(r,['gst','inputgst','gsttcs','tcs']),
-  c3=findCol(r,['tds','incometax']),c4=findCol(r,['orderid','order_id']),
-  c5=findCol(r,['orderitem','item_id','order_item_id']),c6=findCol(r,['sku','sellersku']);
-  PAYMENTS_DATA=json.filter(r=>r[c4]).map(r=>{
-    let iid=r[c5];if(typeof iid==='number')iid='OI:'+Math.round(iid).toString();else iid=String(iid||'');
-    return{settlement_value:parseFloat(r[c1])||0,gst_tcs:parseFloat(r[c2])||0,tds:parseFloat(r[c3])||0,
-    order_id:String(r[c4]||''),order_item_id:iid,sku:cleanSku(r[c6])};
-  });
-}
-function parsePnl(json){
-  if(!json.length)return;const r=json[0];
-  const c1=findCol(r,['sku']),c2=findCol(r,['costing','cost','price']);
-  COSTING_DATA=json.filter(r=>r[c1]).map(r=>({sku:String(r[c1]||'').trim(),costing:parseFloat(r[c2])||0}));
-}
+function fc(row,kws){const ks=Object.keys(row);for(const kw of kws){const m=ks.find(k=>k.toLowerCase().replace(/[\s_\-\.]+/g,'').includes(kw.toLowerCase().replace(/[\s_\-\.]+/g,'')));if(m)return m}return null}
+function cs(v){return String(v||'').replace(/"/g,'').replace(/SKU:/gi,'').trim()}
+function pO(j){if(!j.length)return;const r=j[0],c1=fc(r,['order_id','orderid']),c2=fc(r,['order_date','orderdate','date']),c3=fc(r,['sku','seller_sku','sellersku']),c4=fc(r,['fsn']),c5=fc(r,['product_title','producttitle','title','product']),c6=fc(r,['quantity','qty']),c7=fc(r,['order_item_id','orderitemid','item_id']);OD=j.filter(r=>r[c1]).map(r=>({oi:String(r[c1]||''),od:r[c2] instanceof Date?r[c2].toISOString().replace('T',' ').slice(0,19):String(r[c2]||''),sk:cs(r[c3]),fn:String(r[c4]||''),pt:String(r[c5]||'').replace(/"/g,'').slice(0,80),qt:parseInt(r[c6])||0,ii:String(r[c7]||'')}))}
+function pR(j){if(!j.length)return;const r=j[0],c1=fc(r,['order_item_id','orderitemid','item_id']),c2=fc(r,['return_type','returntype','type']),c3=fc(r,['sku','seller_sku']),c4=fc(r,['product_title','title','product']),c5=fc(r,['quantity','qty']);RD=j.filter(r=>r[c1]).map(r=>({ii:String(r[c1]||''),rt:String(r[c2]||''),sk:cs(r[c3]),pt:String(r[c4]||'').replace(/"/g,'').slice(0,80),qt:parseInt(r[c5])||0}))}
+function pPa(j){if(!j.length)return;const r=j[0],c1=fc(r,['settlement','banksettlement']),c2=fc(r,['gst','inputgst','gsttcs','tcs']),c3=fc(r,['tds','incometax']),c4=fc(r,['orderid','order_id']),c5=fc(r,['orderitem','item_id','order_item_id']),c6=fc(r,['sku','sellersku']);PD=j.filter(r=>r[c4]).map(r=>{let ii=r[c5];if(typeof ii==='number')ii='OI:'+Math.round(ii);else ii=String(ii||'');return{sv:parseFloat(r[c1])||0,gs:parseFloat(r[c2])||0,td:parseFloat(r[c3])||0,oi:String(r[c4]||''),ii:ii,sk:cs(r[c6])}})}
+function pPn(j){if(!j.length)return;const r=j[0],c1=fc(r,['sku']),c2=fc(r,['costing','cost','price']);CD=j.filter(r=>r[c1]).map(r=>({sk:String(r[c1]||'').trim(),co:parseFloat(r[c2])||0}))}
 
 // ═══════════ LAUNCH ═══════════
-function checkAllUploaded(){
-  const btn=document.getElementById('launchBtn');
-  if(uploadState.orders&&uploadState.returns&&uploadState.payments&&uploadState.pnl){
-    btn.classList.add('ready');btn.textContent='🚀 Launch Dashboard ('+ORDERS_DATA.length+' orders)';
-  }
-}
-function launchDashboard(){
-  if(!uploadState.orders||!uploadState.returns||!uploadState.payments||!uploadState.pnl)return;
-  document.getElementById('uploadScreen').classList.add('hidden');
-  setTimeout(()=>{document.getElementById('uploadScreen').style.display='none';document.getElementById('appWrap').classList.add('visible');initDashboard()},500);
-}
-function reloadData(){
-  ORDERS_DATA=[];RETURNS_DATA=[];PAYMENTS_DATA=[];COSTING_DATA=[];
-  uploadState.orders=uploadState.returns=uploadState.payments=uploadState.pnl=false;
-  document.querySelectorAll('.upload-zone').forEach(z=>z.classList.remove('done'));
-  document.querySelectorAll('.upload-progress-fill').forEach(p=>p.style.width='0');
-  ['orders','returns','payments','pnl'].forEach(k=>document.getElementById('status-'+k).textContent='Click or drag .xlsx file');
-  document.getElementById('launchBtn').classList.remove('ready');document.getElementById('launchBtn').textContent='🚀 Launch Dashboard';
-  document.querySelectorAll('.upload-zone input[type="file"]').forEach(i=>i.value='');
-  document.getElementById('appWrap').classList.remove('visible');
-  const u=document.getElementById('uploadScreen');u.style.display='';u.classList.remove('hidden');
-}
+function chk(){const b=document.getElementById('goBtn');if(us.orders&&us.returns&&us.payments&&us.pnl){b.classList.add('rdy');b.textContent='🚀 Launch ('+OD.length+' orders)'}}
+function launch(){if(!us.orders||!us.returns||!us.payments||!us.pnl)return;document.getElementById('US').classList.add('bye');setTimeout(()=>{document.getElementById('US').style.display='none';document.getElementById('APP').classList.add('on');init();toast('Dashboard loaded — '+OD.length+' orders')},500)}
+function reload(){OD=[];RD=[];PD=[];CD=[];us.orders=us.returns=us.payments=us.pnl=0;document.querySelectorAll('.up-zone').forEach(z=>z.classList.remove('ok'));document.querySelectorAll('.up-fill').forEach(p=>p.style.width='0');['orders','returns','payments','pnl'].forEach(k=>document.getElementById('s-'+k).textContent='Click or drop .xlsx');document.getElementById('goBtn').classList.remove('rdy');document.getElementById('goBtn').textContent='🚀 Launch Dashboard';document.querySelectorAll('.up-zone input[type="file"]').forEach(i=>i.value='');document.getElementById('APP').classList.remove('on');const u=document.getElementById('US');u.style.display='';u.classList.remove('bye')}
 
-function initDashboard(){
-  returnItemMap={};RETURNS_DATA.forEach(r=>{returnItemMap[r.order_item_id]=r});
-  orderItemMap={};ORDERS_DATA.forEach(o=>{orderItemMap[o.order_item_id]=o});
-  costingMap={};COSTING_DATA.forEach(c=>{costingMap[c.sku]=c.costing});
-  allSkus=[...new Set(ORDERS_DATA.map(o=>o.sku).filter(Boolean))].sort();
-  const oSel=document.getElementById('orderSkuFilter');oSel.innerHTML='<option value="">All SKUs</option>';
-  allSkus.forEach(s=>{oSel.innerHTML+='<option value="'+s+'">'+s+'</option>'});
-  const rSel=document.getElementById('returnSkuFilter');rSel.innerHTML='<option value="">All SKUs</option>';
-  [...new Set(RETURNS_DATA.map(r=>r.sku).filter(Boolean))].sort().forEach(s=>{rSel.innerHTML+='<option value="'+s+'">'+s+'</option>'});
-  const pSel=document.getElementById('paymentSkuFilter');pSel.innerHTML='<option value="">All SKUs</option>';
-  [...new Set(PAYMENTS_DATA.map(p=>p.sku).filter(Boolean))].sort().forEach(s=>{pSel.innerHTML+='<option value="'+s+'">'+s+'</option>'});
-  renderDashboard();initOrders();initReturns();initPayments();renderPnl();
+function init(){
+riM={};RD.forEach(r=>{riM[r.ii]=r});oiM={};OD.forEach(o=>{oiM[o.ii]=o});cM={};CD.forEach(c=>{cM[c.sk]=c.co});
+aS=[...new Set(OD.map(o=>o.sk).filter(Boolean))].sort();
+['oSf'].forEach(id=>{const s=document.getElementById(id);s.innerHTML='<option value="">All SKUs</option>';aS.forEach(sk=>{s.innerHTML+='<option value="'+sk+'">'+sk+'</option>'})});
+const rs=document.getElementById('rSf');rs.innerHTML='<option value="">All SKUs</option>';[...new Set(RD.map(r=>r.sk).filter(Boolean))].sort().forEach(s=>{rs.innerHTML+='<option value="'+s+'">'+s+'</option>'});
+const ps=document.getElementById('pSf');ps.innerHTML='<option value="">All SKUs</option>';[...new Set(PD.map(p=>p.sk).filter(Boolean))].sort().forEach(s=>{ps.innerHTML+='<option value="'+s+'">'+s+'</option>'});
+rD();iO();iR();iP();rPL();
 }
 
 // ═══════════ NAV ═══════════
-function switchSection(n){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('sec-'+n).classList.add('active');
-  document.querySelector('.nav-item[data-section="'+n+'"]').classList.add('active');
-  const t={dashboard:'Dashboard',orders:'Orders Received',returns:'Order Returns',payments:'Payment Sheet',pnl:'PNL Sheet'};
-  document.getElementById('pageTitle').textContent=t[n]||n;
-  document.getElementById('sidebar').classList.remove('open');
-}
+function go(n){document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));document.querySelectorAll('.ni').forEach(i=>i.classList.remove('on'));document.getElementById('sec-'+n).classList.add('on');document.querySelector('.ni[data-s="'+n+'"]').classList.add('on');const t={dash:'Dashboard',ord:'Orders Received',ret:'Order Returns',pay:'Payment Sheet',pnl:'PNL Sheet'};document.getElementById('pgT').textContent=t[n]||n;document.getElementById('side').classList.remove('op')}
 
 // ═══════════ UTILS ═══════════
-function fmt(n){return'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function fmtInt(n){return Number(n).toLocaleString('en-IN')}
-function pct(p,t){return t===0?'0.0':((p/t)*100).toFixed(1)}
-function truncate(s,l=50){return s&&s.length>l?s.slice(0,l)+'…':(s||'—')}
-function renderPagination(cid,total,cur,fn){
-  const tp=Math.ceil(total/ROWS_PER_PAGE),c=document.getElementById(cid);
-  const st=(cur-1)*ROWS_PER_PAGE+1,en=Math.min(cur*ROWS_PER_PAGE,total);
-  let h=`<span>Showing ${st}–${en} of ${fmtInt(total)}</span><div class="pagination-btns">`;
-  h+=`<button class="page-btn" onclick="${fn}(1)" ${cur===1?'disabled':''}>«</button>`;
-  h+=`<button class="page-btn" onclick="${fn}(${cur-1})" ${cur===1?'disabled':''}>‹</button>`;
-  let sp=Math.max(1,cur-2),ep=Math.min(tp,sp+4);if(ep-sp<4)sp=Math.max(1,ep-4);
-  for(let i=sp;i<=ep;i++)h+=`<button class="page-btn ${i===cur?'active':''}" onclick="${fn}(${i})">${i}</button>`;
-  h+=`<button class="page-btn" onclick="${fn}(${cur+1})" ${cur>=tp?'disabled':''}>›</button>`;
-  h+=`<button class="page-btn" onclick="${fn}(${tp})" ${cur>=tp?'disabled':''}>»</button></div>`;
-  c.innerHTML=h;
-}
-
-// ═══════════ PAYMENT HELPERS ═══════════
-// Group payments by order_id → net settlement per unique order
-function getOrderNetMap(){
-  const m={};
-  PAYMENTS_DATA.forEach(p=>{
-    if(!m[p.order_id])m[p.order_id]={net:0,sku:p.sku};
-    m[p.order_id].net+=p.settlement_value;
-  });
-  return m;
-}
-function getOrderCounts(){
-  const m=getOrderNetMap(),vals=Object.values(m);
-  return{
-    received:vals.filter(v=>v.net>0).length,
-    pending:vals.filter(v=>v.net===0).length,
-    negative:vals.filter(v=>v.net<0).length,
-    total:vals.length
-  };
-}
+const F=n=>'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const I=n=>Number(n).toLocaleString('en-IN');
+const P=(p,t)=>t===0?'0.0':((p/t)*100).toFixed(1);
+const T=(s,l=45)=>s&&s.length>l?s.slice(0,l)+'…':(s||'—');
+function rPg(cid,tot,cur,fn){const tp=Math.ceil(tot/PP),c=document.getElementById(cid),st=(cur-1)*PP+1,en=Math.min(cur*PP,tot);let h=`<span>${st}–${en} of ${I(tot)}</span><div class="pbs">`;h+=`<button class="pbtn" onclick="${fn}(1)" ${cur===1?'disabled':''}>«</button><button class="pbtn" onclick="${fn}(${cur-1})" ${cur===1?'disabled':''}>‹</button>`;let sp=Math.max(1,cur-2),ep=Math.min(tp,sp+4);if(ep-sp<4)sp=Math.max(1,ep-4);for(let i=sp;i<=ep;i++)h+=`<button class="pbtn ${i===cur?'on':''}" onclick="${fn}(${i})">${i}</button>`;h+=`<button class="pbtn" onclick="${fn}(${cur+1})" ${cur>=tp?'disabled':''}>›</button><button class="pbtn" onclick="${fn}(${tp})" ${cur>=tp?'disabled':''}>»</button></div>`;c.innerHTML=h}
 
 // ═══════════ DASHBOARD ═══════════
-function renderDashboard(){
-  const to=ORDERS_DATA.length,tr=RETURNS_DATA.length,no=to-tr;
-  const cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length;
-  const cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length;
-  const tsNet=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0);
-  const tsPositive=PAYMENTS_DATA.filter(p=>p.settlement_value>0).reduce((s,p)=>s+p.settlement_value,0);
-  const rcCount=PAYMENTS_DATA.filter(p=>p.settlement_value>0).length;
-  document.getElementById('ordersCount').textContent=fmtInt(to);
-  document.getElementById('returnsCount').textContent=fmtInt(tr);
-  document.getElementById('paymentsCount').textContent=fmtInt(PAYMENTS_DATA.length);
-  document.getElementById('dashStats').innerHTML=`
-    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div><div class="stat-sub">${allSkus.length} unique SKUs</div></div>
-    <div class="stat-card green animate-in"><div class="stat-label">Net Orders</div><div class="stat-value">${fmtInt(no)}</div><div class="stat-sub"><span class="up">${pct(no,to)}%</span> of total</div></div>
-    <div class="stat-card red animate-in"><div class="stat-label">Total Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub"><span class="down">${pct(tr,to)}%</span> return rate</div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">RTO (Courier)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,no)}% of delivered</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Customer Returns</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,no)}% of delivered</div></div>
-    <div class="stat-card cyan animate-in"><div class="stat-label">Total Settlement</div><div class="stat-value">${fmt(tsNet)}</div><div class="stat-sub">${fmtInt(rcCount)} received (${fmt(tsPositive)})</div></div>`;
-  const cols=['var(--accent)','var(--green)','var(--orange)','var(--blue)','var(--red)','var(--cyan)','#e056a0','#a29bfe'];
-  let sh='';allSkus.forEach((sku,i)=>{
-    const cnt=ORDERS_DATA.filter(o=>o.sku===sku).length;const rc=RETURNS_DATA.filter(r=>r.sku===sku).length;const c=cols[i%cols.length];
-    sh+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">📦</div><div class="cat-info"><div class="num">${fmtInt(cnt)}</div><h4>${sku}</h4><p>${rc} returns (${pct(rc,cnt)}%)</p></div></div>`;
-  });document.getElementById('dashSkuOverview').innerHTML=sh;
-  const recent=[...ORDERS_DATA].sort((a,b)=>b.order_date.localeCompare(a.order_date)).slice(0,15);
-  let tb='';recent.forEach(o=>{
-    const ir=returnItemMap[o.order_item_id];
-    const st=ir?`<span class="badge-tag badge-red">${ir.return_type==='courier_return'?'RTO':'Cust. Return'}</span>`:'<span class="badge-tag badge-green">Delivered</span>';
-    tb+=`<tr><td style="font-family:'Space Mono',monospace;font-size:0.75rem">${o.order_id}</td><td>${o.order_date.split(' ')[0]}</td><td><span class="badge-tag badge-purple">${o.sku}</span></td><td>${truncate(o.product_title,40)}</td><td>${o.quantity}</td><td>${st}</td></tr>`;
-  });document.getElementById('dashRecentOrders').innerHTML=tb;
+function rD(){
+const to=OD.length,tr=RD.length,no=to-tr,del=no,cr=RD.filter(r=>r.rt==='courier_return').length,cu=RD.filter(r=>r.rt==='customer_return').length;
+const tsNet=PD.reduce((s,p)=>s+p.sv,0),recR=PD.filter(p=>p.sv>0),tsRec=recR.reduce((s,p)=>s+p.sv,0);
+document.getElementById('nOrd').textContent=I(to);document.getElementById('nRet').textContent=I(tr);document.getElementById('nPay').textContent=I(PD.length);
+document.getElementById('dS').innerHTML=`
+<div class="sc pur"><div class="sc-l">Total Orders</div><div class="sc-v">${I(to)}</div><div class="sc-s">${aS.length} unique SKUs</div></div>
+<div class="sc grn"><div class="sc-l">Net Orders (Delivered)</div><div class="sc-v">${I(del)}</div><div class="sc-s"><span class="up">${P(del,to)}%</span> delivery rate</div></div>
+<div class="sc red"><div class="sc-l">Total Returns</div><div class="sc-v">${I(tr)}</div><div class="sc-s"><span class="dn">${P(tr,to)}%</span> return rate</div></div>
+<div class="sc org"><div class="sc-l">RTO (Courier)</div><div class="sc-v">${I(cr)}</div><div class="sc-s">${P(cr,del)}% of delivered</div></div>
+<div class="sc blu"><div class="sc-l">Customer Returns</div><div class="sc-v">${I(cu)}</div><div class="sc-s">${P(cu,del)}% of delivered</div></div>
+<div class="sc cyn"><div class="sc-l">Total Settlement (Net)</div><div class="sc-v">${F(tsNet)}</div><div class="sc-s">${I(recR.length)} received (${F(tsRec)})</div></div>`;
+const cls=['var(--ac)','var(--grn)','var(--org)','var(--blu)','var(--red)','var(--cyn)','#ec4899','#a78bfa'];
+let sh='';aS.forEach((sk,i)=>{const cnt=OD.filter(o=>o.sk===sk).length,rc=RD.filter(r=>r.sk===sk).length,c=cls[i%cls.length];sh+=`<div class="cc"><div class="ci" style="background:${c}15;color:${c}">📦</div><div class="cx"><div class="nm">${I(cnt)}</div><h4>${sk}</h4><p>${rc} returns (${P(rc,cnt-rc)}% of delivered)</p></div></div>`});
+document.getElementById('dSku').innerHTML=sh;
+const rec=[...OD].sort((a,b)=>b.od.localeCompare(a.od)).slice(0,20);
+let tb='';rec.forEach(o=>{const ir=riM[o.ii];const st=ir?`<span class="bt bt-r">${ir.rt==='courier_return'?'RTO':'Cust. Return'}</span>`:'<span class="bt bt-g">Delivered</span>';tb+=`<tr><td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">${o.oi}</td><td>${o.od.split(' ')[0]}</td><td><span class="bt bt-p">${o.sk}</span></td><td>${T(o.pt,35)}</td><td>${o.qt}</td><td>${st}</td></tr>`});
+document.getElementById('dRec').innerHTML=tb;
 }
 
 // ═══════════ ORDERS ═══════════
-function initOrders(){
-  let tabs='<div class="sku-tab active" onclick="filterOrdersBySku(\'\')">All</div>';
-  allSkus.forEach(s=>{const c=ORDERS_DATA.filter(o=>o.sku===s).length;tabs+=`<div class="sku-tab" onclick="filterOrdersBySku('${s}')">${s} (${c})</div>`});
-  document.getElementById('orderSkuTabs').innerHTML=tabs;renderOrderStats();renderOrdersTable();
-}
-function renderOrderStats(){
-  const t=ORDERS_DATA.length,tq=ORDERS_DATA.reduce((s,o)=>s+o.quantity,0),rc=ORDERS_DATA.filter(o=>returnItemMap[o.order_item_id]).length;
-  document.getElementById('orderStats').innerHTML=`
-    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(t)}</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Total Quantity</div><div class="stat-value">${fmtInt(tq)}</div></div>
-    <div class="stat-card green animate-in"><div class="stat-label">Delivered</div><div class="stat-value">${fmtInt(t-rc)}</div><div class="stat-sub"><span class="up">${pct(t-rc,t)}%</span></div></div>
-    <div class="stat-card red animate-in"><div class="stat-label">Returned</div><div class="stat-value">${fmtInt(rc)}</div><div class="stat-sub"><span class="down">${pct(rc,t)}%</span></div></div>`;
-}
-function filterOrdersBySku(sku){
-  activeSkuFilter=sku;document.getElementById('orderSkuFilter').value=sku;
-  document.querySelectorAll('#orderSkuTabs .sku-tab').forEach(t=>{t.classList.toggle('active',(sku===''&&t.textContent.startsWith('All'))||t.textContent.startsWith(sku+' '))});
-  currentOrderPage=1;renderOrdersTable();
-}
-function getFilteredOrders(){
-  let d=[...ORDERS_DATA];const sk=document.getElementById('orderSkuFilter').value||activeSkuFilter;
-  const sr=document.getElementById('orderSearchInput').value.toLowerCase().trim();
-  if(sk)d=d.filter(o=>o.sku===sk);if(sr)d=d.filter(o=>o.order_id.toLowerCase().includes(sr)||o.order_item_id.toLowerCase().includes(sr)||o.sku.toLowerCase().includes(sr)||o.product_title.toLowerCase().includes(sr));return d;
-}
-function renderOrdersTable(){
-  const d=getFilteredOrders(),st=(currentOrderPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
-  let h='';pg.forEach((o,i)=>{
-    const r=returnItemMap[o.order_item_id];
-    const rb=r?`<span class="badge-tag badge-red">${r.return_type==='courier_return'?'RTO':'Cust.'}</span>`:'<span class="badge-tag badge-green">No</span>';
-    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.74rem">${o.order_id}</td><td>${o.order_date.split(' ')[0]}</td><td><span class="badge-tag badge-purple">${o.sku}</span></td><td style="font-size:0.74rem">${o.fsn}</td><td title="${o.product_title}">${truncate(o.product_title,35)}</td><td>${o.quantity}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${o.order_item_id}</td><td>${rb}</td></tr>`;
-  });document.getElementById('ordersTableBody').innerHTML=h||'<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">No orders found</td></tr>';
-  renderPagination('ordersPagination',d.length,currentOrderPage,'goOrderPage');
-}
-function goOrderPage(p){currentOrderPage=p;renderOrdersTable()}
+function iO(){let tabs='<div class="stb on" onclick="fOS(\'\')">All ('+I(OD.length)+')</div>';aS.forEach(s=>{const c=OD.filter(o=>o.sk===s).length;tabs+=`<div class="stb" onclick="fOS('${s}')">${s} (${c})</div>`});document.getElementById('oTabs').innerHTML=tabs;rOS();rOT()}
+function rOS(){const t=OD.length,tq=OD.reduce((s,o)=>s+o.qt,0),rc=OD.filter(o=>riM[o.ii]).length;document.getElementById('oS').innerHTML=`<div class="sc pur"><div class="sc-l">Total Orders</div><div class="sc-v">${I(t)}</div></div><div class="sc blu"><div class="sc-l">Total Quantity</div><div class="sc-v">${I(tq)}</div></div><div class="sc grn"><div class="sc-l">Delivered</div><div class="sc-v">${I(t-rc)}</div><div class="sc-s"><span class="up">${P(t-rc,t)}%</span></div></div><div class="sc red"><div class="sc-l">Returned</div><div class="sc-v">${I(rc)}</div><div class="sc-s"><span class="dn">${P(rc,t)}%</span></div></div>`}
+function fOS(sk){aSF=sk;document.getElementById('oSf').value=sk;document.querySelectorAll('#oTabs .stb').forEach(t=>{t.classList.toggle('on',(sk===''&&t.textContent.startsWith('All'))||t.textContent.startsWith(sk+' '))});oP=1;rOT()}
+function gFO(){let d=[...OD];const sk=document.getElementById('oSf').value||aSF,sr=document.getElementById('oSi').value.toLowerCase().trim();if(sk)d=d.filter(o=>o.sk===sk);if(sr)d=d.filter(o=>o.oi.toLowerCase().includes(sr)||o.ii.toLowerCase().includes(sr)||o.sk.toLowerCase().includes(sr)||o.pt.toLowerCase().includes(sr));return d}
+function rOT(){const d=gFO(),st=(oP-1)*PP,pg=d.slice(st,st+PP);let h='';pg.forEach((o,i)=>{const r=riM[o.ii],rb=r?`<span class="bt bt-r">${r.rt==='courier_return'?'RTO':'Cust.'}</span>`:'<span class="bt bt-g">No</span>';h+=`<tr><td>${st+i+1}</td><td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">${o.oi}</td><td>${o.od.split(' ')[0]}</td><td><span class="bt bt-p">${o.sk}</span></td><td style="font-size:.72rem">${o.fn}</td><td title="${o.pt}">${T(o.pt,30)}</td><td>${o.qt}</td><td style="font-family:'JetBrains Mono',monospace;font-size:.7rem">${o.ii}</td><td>${rb}</td></tr>`});document.getElementById('oTB').innerHTML=h||'<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t3)">No orders found</td></tr>';rPg('oPg',d.length,oP,'goO')}
+function goO(p){oP=p;rOT()}
 
 // ═══════════ RETURNS ═══════════
-function initReturns(){renderReturnStats();renderReturnsTable()}
-function renderReturnStats(){
-  const t=RETURNS_DATA.length,cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length,
-  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length,to=ORDERS_DATA.length,del=to-t;
-  document.getElementById('returnStats').innerHTML=`
-    <div class="stat-card red animate-in"><div class="stat-label">Total Returns</div><div class="stat-value">${fmtInt(t)}</div><div class="stat-sub"><span class="down">${pct(t,to)}%</span> of all orders</div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">Courier Return (RTO)</div><div class="stat-value">${fmtInt(cr)}</div><div class="stat-sub">${pct(cr,del)}% of delivered</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Customer Return</div><div class="stat-value">${fmtInt(cu)}</div><div class="stat-sub">${pct(cu,del)}% of delivered</div></div>
-    <div class="stat-card green animate-in"><div class="stat-label">Net Delivered</div><div class="stat-value">${fmtInt(del)}</div><div class="stat-sub"><span class="up">${pct(del,to)}%</span></div></div>`;
-  const cp=t===0?50:(cr/t)*100,ctp=100-cp;
-  document.getElementById('returnVisual').innerHTML=`
-    <div class="donut-wrap"><svg viewBox="0 0 160 160" style="transform:rotate(-90deg)"><circle cx="80" cy="80" r="60" fill="none" stroke="var(--bg-elevated)" stroke-width="20"/><circle cx="80" cy="80" r="60" fill="none" stroke="var(--orange)" stroke-width="20" stroke-dasharray="${cp*3.77} 377" stroke-linecap="round"/><circle cx="80" cy="80" r="60" fill="none" stroke="var(--blue)" stroke-width="20" stroke-dasharray="${ctp*3.77} 377" stroke-dashoffset="${-cp*3.77}" stroke-linecap="round"/></svg><div class="donut-center"><div class="num">${fmtInt(t)}</div><div class="lbl">RETURNS</div></div></div>
-    <div class="legend-items"><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div><span class="legend-label">Courier (RTO)</span><span class="legend-val">${fmtInt(cr)} (${pct(cr,del)}% of del.)</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span class="legend-label">Customer</span><span class="legend-val">${fmtInt(cu)} (${pct(cu,del)}% of del.)</span></div></div>`;
-  const rs=[...new Set(RETURNS_DATA.map(r=>r.sku).filter(Boolean))].sort();
-  const cls=['var(--red)','var(--orange)','var(--blue)','var(--accent)','var(--cyan)','var(--green)'];
-  let cd='';rs.forEach((sku,i)=>{
-    const cnt=RETURNS_DATA.filter(r=>r.sku===sku).length,crr=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='courier_return').length,
-    cuu=RETURNS_DATA.filter(r=>r.sku===sku&&r.return_type==='customer_return').length,
-    skuOrders=ORDERS_DATA.filter(o=>o.sku===sku).length,skuDel=skuOrders-cnt,c=cls[i%cls.length];
-    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">↩️</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${cnt} returns</div><p>RTO: ${crr} (${pct(crr,skuDel)}%) · Cust: ${cuu} (${pct(cuu,skuDel)}%) of delivered</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(crr,cnt)}%;background:var(--orange)"></div></div></div></div>`;
-  });document.getElementById('returnCategoryCards').innerHTML=cd;
+function iR(){rRS();rRT()}
+function rRS(){
+const t=RD.length,cr=RD.filter(r=>r.rt==='courier_return').length,cu=RD.filter(r=>r.rt==='customer_return').length,to=OD.length,del=to-t;
+document.getElementById('rS').innerHTML=`<div class="sc red"><div class="sc-l">Total Returns</div><div class="sc-v">${I(t)}</div><div class="sc-s"><span class="dn">${P(t,to)}%</span> of all orders</div></div><div class="sc org"><div class="sc-l">Courier (RTO)</div><div class="sc-v">${I(cr)}</div><div class="sc-s">${P(cr,del)}% of delivered</div></div><div class="sc blu"><div class="sc-l">Customer Return</div><div class="sc-v">${I(cu)}</div><div class="sc-s">${P(cu,del)}% of delivered</div></div><div class="sc grn"><div class="sc-l">Net Delivered</div><div class="sc-v">${I(del)}</div><div class="sc-s"><span class="up">${P(del,to)}%</span></div></div>`;
+const cp=t===0?50:(cr/t)*100,ctp=100-cp;
+document.getElementById('rV').innerHTML=`<div class="dw"><svg viewBox="0 0 150 150" style="transform:rotate(-90deg)"><circle cx="75" cy="75" r="55" fill="none" stroke="var(--bg5)" stroke-width="18"/><circle cx="75" cy="75" r="55" fill="none" stroke="var(--org)" stroke-width="18" stroke-dasharray="${cp*3.45} 345" stroke-linecap="round"/><circle cx="75" cy="75" r="55" fill="none" stroke="var(--blu)" stroke-width="18" stroke-dasharray="${ctp*3.45} 345" stroke-dashoffset="${-cp*3.45}" stroke-linecap="round"/></svg><div class="dc"><div class="nm">${I(t)}</div><div class="lb">Returns</div></div></div><div class="li"><div class="lit"><div class="ld" style="background:var(--org)"></div><span class="ll">Courier (RTO)</span><span class="lv">${I(cr)} · ${P(cr,del)}% of del.</span></div><div class="lit"><div class="ld" style="background:var(--blu)"></div><span class="ll">Customer</span><span class="lv">${I(cu)} · ${P(cu,del)}% of del.</span></div></div>`;
+const rs=[...new Set(RD.map(r=>r.sk).filter(Boolean))].sort(),cls=['var(--red)','var(--org)','var(--blu)','var(--ac)','var(--cyn)','var(--grn)'];
+let cd='';rs.forEach((sk,i)=>{const cnt=RD.filter(r=>r.sk===sk).length,crr=RD.filter(r=>r.sk===sk&&r.rt==='courier_return').length,cuu=RD.filter(r=>r.sk===sk&&r.rt==='customer_return').length,skO=OD.filter(o=>o.sk===sk).length,skD=skO-cnt,c=cls[i%cls.length];cd+=`<div class="cc"><div class="ci" style="background:${c}15;color:${c}">↩️</div><div class="cx" style="flex:1"><h4>${sk}</h4><div class="nm">${cnt} returns</div><p>RTO: ${crr} (${P(crr,skD)}%) · Cust: ${cuu} (${P(cuu,skD)}%) of delivered</p><div class="pb"><div class="pf" style="width:${P(crr,cnt)}%;background:var(--org)"></div></div></div></div>`});
+document.getElementById('rC').innerHTML=cd;
 }
-function getFilteredReturns(){
-  let d=[...RETURNS_DATA];const ty=document.getElementById('returnTypeFilter').value,sk=document.getElementById('returnSkuFilter').value;
-  if(ty)d=d.filter(r=>r.return_type===ty);if(sk)d=d.filter(r=>r.sku===sk);return d;
-}
-function renderReturnsTable(){
-  const d=getFilteredReturns(),st=(currentReturnPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
-  let h='';pg.forEach((r,i)=>{
-    const mo=orderItemMap[r.order_item_id];
-    const tb=r.return_type==='courier_return'?'<span class="badge-tag badge-orange">Courier (RTO)</span>':'<span class="badge-tag badge-blue">Customer</span>';
-    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${r.order_item_id}</td><td>${tb}</td><td><span class="badge-tag badge-purple">${r.sku}</span></td><td>${truncate(r.product_title,35)}</td><td>${r.quantity}</td><td>${mo?'<span class="badge-tag badge-green">✓ Matched</span>':'<span class="badge-tag badge-red">✗ No Match</span>'}</td></tr>`;
-  });document.getElementById('returnsTableBody').innerHTML=h||'<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">No returns found</td></tr>';
-  renderPagination('returnsPagination',d.length,currentReturnPage,'goReturnPage');
-}
-function goReturnPage(p){currentReturnPage=p;renderReturnsTable()}
+function gFR(){let d=[...RD];const ty=document.getElementById('rTf').value,sk=document.getElementById('rSf').value;if(ty)d=d.filter(r=>r.rt===ty);if(sk)d=d.filter(r=>r.sk===sk);return d}
+function rRT(){const d=gFR(),st=(rP-1)*PP,pg=d.slice(st,st+PP);let h='';pg.forEach((r,i)=>{const mo=oiM[r.ii],tb=r.rt==='courier_return'?'<span class="bt bt-o">Courier (RTO)</span>':'<span class="bt bt-b">Customer</span>';h+=`<tr><td>${st+i+1}</td><td style="font-family:'JetBrains Mono',monospace;font-size:.7rem">${r.ii}</td><td>${tb}</td><td><span class="bt bt-p">${r.sk}</span></td><td>${T(r.pt,30)}</td><td>${r.qt}</td><td>${mo?'<span class="bt bt-g">✓ Match</span>':'<span class="bt bt-r">✗ None</span>'}</td></tr>`});document.getElementById('rTB').innerHTML=h||'<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t3)">No returns</td></tr>';rPg('rPg',d.length,rP,'goR')}
+function goR(p){rP=p;rRT()}
 
 // ═══════════ PAYMENTS ═══════════
-function initPayments(){renderPaymentStats();renderPaymentsTable()}
-function renderPaymentStats(){
-  const tsAll=PAYMENTS_DATA.reduce((s,p)=>s+p.settlement_value,0),
-  tsPositive=PAYMENTS_DATA.filter(p=>p.settlement_value>0).reduce((s,p)=>s+p.settlement_value,0),
-  tg=PAYMENTS_DATA.reduce((s,p)=>s+p.gst_tcs,0),
-  td=PAYMENTS_DATA.reduce((s,p)=>s+p.tds,0);
-  const rcRows=PAYMENTS_DATA.filter(p=>p.settlement_value>0),
-  pnRows=PAYMENTS_DATA.filter(p=>p.settlement_value===0),
-  negRows=PAYMENTS_DATA.filter(p=>p.settlement_value<0),
-  negTotal=negRows.reduce((s,p)=>s+p.settlement_value,0);
-  document.getElementById('paymentStats').innerHTML=`
-    <div class="stat-card green animate-in"><div class="stat-label">Total Settlement (Net)</div><div class="stat-value">${fmt(tsAll)}</div><div class="stat-sub">All ${fmtInt(PAYMENTS_DATA.length)} rows summed</div></div>
-    <div class="stat-card blue animate-in"><div class="stat-label">Total GST + TCS</div><div class="stat-value">${fmt(tg)}</div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">Total TDS</div><div class="stat-value">${fmt(td)}</div></div>
-    <div class="stat-card purple animate-in"><div class="stat-label">Payment Received</div><div class="stat-value">${fmtInt(rcRows.length)}</div><div class="stat-sub"><span class="up">${fmt(tsPositive)}</span></div></div>
-    <div class="stat-card red animate-in"><div class="stat-label">Payment Pending (₹0)</div><div class="stat-value">${fmtInt(pnRows.length)}</div><div class="stat-sub"><span class="down">${pct(pnRows.length,PAYMENTS_DATA.length)}%</span> of rows</div></div>
-    <div class="stat-card cyan animate-in"><div class="stat-label">Negative / Refund</div><div class="stat-value">${fmtInt(negRows.length)}</div><div class="stat-sub"><span class="down">${fmt(Math.abs(negTotal))}</span> deducted</div></div>`;
-  const ps=[...new Set(PAYMENTS_DATA.map(p=>p.sku).filter(Boolean))].sort();
-  const cls=['var(--green)','var(--accent)','var(--orange)','var(--blue)','var(--cyan)','var(--red)'];
-  let cd='';ps.forEach((sku,i)=>{
-    const sp=PAYMENTS_DATA.filter(p=>p.sku===sku),sv=sp.reduce((s,p)=>s+p.settlement_value,0);
-    // Group by order_id for this SKU
-    const skuOrders={};sp.forEach(p=>{if(!skuOrders[p.order_id])skuOrders[p.order_id]=0;skuOrders[p.order_id]+=p.settlement_value});
-    const skuVals=Object.values(skuOrders),sr=skuVals.filter(v=>v>0).length,spn=skuVals.filter(v=>v<=0).length,c=cls[i%cls.length];
-    cd+=`<div class="cat-card animate-in"><div class="cat-icon" style="background:${c}20;color:${c}">💰</div><div class="cat-info" style="flex:1"><h4>${sku}</h4><div class="num">${fmt(sv)}</div><p>✓ ${sr} received · ⏳ ${spn} pending</p><div class="progress-bar"><div class="progress-fill" style="width:${pct(sr,skuVals.length)}%;background:${c}"></div></div></div></div>`;
-  });document.getElementById('paymentSkuCards').innerHTML=cd;
+function iP(){rPS();rPT()}
+function rPS(){
+const tsAll=PD.reduce((s,p)=>s+p.sv,0),tsPos=PD.filter(p=>p.sv>0).reduce((s,p)=>s+p.sv,0),tg=PD.reduce((s,p)=>s+p.gs,0),td=PD.reduce((s,p)=>s+p.td,0),rcR=PD.filter(p=>p.sv>0),pnR=PD.filter(p=>p.sv===0),ngR=PD.filter(p=>p.sv<0),ngT=ngR.reduce((s,p)=>s+p.sv,0);
+document.getElementById('pS').innerHTML=`
+<div class="sc grn"><div class="sc-l">Total Settlement (Net)</div><div class="sc-v">${F(tsAll)}</div><div class="sc-s">All ${I(PD.length)} rows summed</div></div>
+<div class="sc blu"><div class="sc-l">Total GST + TCS</div><div class="sc-v">${F(tg)}</div></div>
+<div class="sc org"><div class="sc-l">Total TDS</div><div class="sc-v">${F(td)}</div></div>
+<div class="sc pur"><div class="sc-l">Payment Received</div><div class="sc-v">${I(rcR.length)}</div><div class="sc-s"><span class="up">${F(tsPos)}</span></div></div>
+<div class="sc red"><div class="sc-l">Payment Pending (₹0)</div><div class="sc-v">${I(pnR.length)}</div><div class="sc-s"><span class="dn">${P(pnR.length,PD.length)}%</span> of rows</div></div>
+<div class="sc cyn"><div class="sc-l">Negative / Refund</div><div class="sc-v">${I(ngR.length)}</div><div class="sc-s"><span class="dn">${F(Math.abs(ngT))}</span> deducted</div></div>`;
+const ps=[...new Set(PD.map(p=>p.sk).filter(Boolean))].sort(),cls=['var(--grn)','var(--ac)','var(--org)','var(--blu)','var(--cyn)','var(--red)'];
+let cd='';ps.forEach((sk,i)=>{const sp=PD.filter(p=>p.sk===sk),sv=sp.reduce((s,p)=>s+p.sv,0),sr=sp.filter(p=>p.sv>0).length,spn=sp.filter(p=>p.sv<=0).length,c=cls[i%cls.length];cd+=`<div class="cc"><div class="ci" style="background:${c}15;color:${c}">💰</div><div class="cx" style="flex:1"><h4>${sk}</h4><div class="nm">${F(sv)}</div><p>✓ ${sr} received · ⏳ ${spn} pending</p><div class="pb"><div class="pf" style="width:${P(sr,sp.length)}%;background:${c}"></div></div></div></div>`});
+document.getElementById('pSku').innerHTML=cd;
 }
-function getFilteredPayments(){
-  let d=[...PAYMENTS_DATA];const s=document.getElementById('paymentStatusFilter').value,sk=document.getElementById('paymentSkuFilter').value;
-  if(s==='received')d=d.filter(p=>p.settlement_value>0);if(s==='pending')d=d.filter(p=>p.settlement_value===0);if(s==='negative')d=d.filter(p=>p.settlement_value<0);
-  if(sk)d=d.filter(p=>p.sku===sk);return d;
-}
-function renderPaymentsTable(){
-  const d=getFilteredPayments(),st=(currentPaymentPage-1)*ROWS_PER_PAGE,pg=d.slice(st,st+ROWS_PER_PAGE);
-  let h='';pg.forEach((p,i)=>{
-    const sb=p.settlement_value>0?'<span class="badge-tag badge-green">Received</span>':(p.settlement_value===0?'<span class="badge-tag badge-red">Pending</span>':'<span class="badge-tag badge-orange">Negative</span>');
-    h+=`<tr><td>${st+i+1}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_id}</td><td style="font-family:'Space Mono',monospace;font-size:0.72rem">${p.order_item_id}</td><td><span class="badge-tag badge-purple">${p.sku}</span></td><td style="font-family:'Space Mono',monospace;color:${p.settlement_value>0?'var(--green)':(p.settlement_value<0?'var(--orange)':'var(--red)')}">${fmt(p.settlement_value)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.gst_tcs)}</td><td style="font-family:'Space Mono',monospace">${fmt(p.tds)}</td><td>${sb}</td></tr>`;
-  });document.getElementById('paymentsTableBody').innerHTML=h||'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No payments found</td></tr>';
-  renderPagination('paymentsPagination',d.length,currentPaymentPage,'goPaymentPage');
-}
-function goPaymentPage(p){currentPaymentPage=p;renderPaymentsTable()}
+function gFP(){let d=[...PD];const s=document.getElementById('pFi').value,sk=document.getElementById('pSf').value;if(s==='r')d=d.filter(p=>p.sv>0);if(s==='p')d=d.filter(p=>p.sv===0);if(s==='n')d=d.filter(p=>p.sv<0);if(sk)d=d.filter(p=>p.sk===sk);return d}
+function rPT(){const d=gFP(),st=(pP-1)*PP,pg=d.slice(st,st+PP);let h='';pg.forEach((p,i)=>{const sb=p.sv>0?'<span class="bt bt-g">Received</span>':(p.sv===0?'<span class="bt bt-r">Pending</span>':'<span class="bt bt-o">Negative</span>');h+=`<tr><td>${st+i+1}</td><td style="font-family:'JetBrains Mono',monospace;font-size:.7rem">${p.oi}</td><td style="font-family:'JetBrains Mono',monospace;font-size:.7rem">${p.ii}</td><td><span class="bt bt-p">${p.sk}</span></td><td style="font-family:'JetBrains Mono',monospace;color:${p.sv>0?'var(--grn)':(p.sv<0?'var(--org)':'var(--red)')}">${F(p.sv)}</td><td style="font-family:'JetBrains Mono',monospace">${F(p.gs)}</td><td style="font-family:'JetBrains Mono',monospace">${F(p.td)}</td><td>${sb}</td></tr>`});document.getElementById('pTB').innerHTML=h||'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t3)">No data</td></tr>';rPg('pPg',d.length,pP,'goP')}
+function goP(p){pP=p;rPT()}
 
 // ═══════════ PNL ═══════════
-function renderPnl(){
-  const to=ORDERS_DATA.length,tr=RETURNS_DATA.length,no=to-tr,
-  cr=RETURNS_DATA.filter(r=>r.return_type==='courier_return').length,
-  cu=RETURNS_DATA.filter(r=>r.return_type==='customer_return').length;
-  // RULE: +ve settlement row = 1 received order
-  const recRows=PAYMENTS_DATA.filter(p=>p.settlement_value>0);
-  const recCount=recRows.length;
-  const totalRevenue=recRows.reduce((s,p)=>s+p.settlement_value,0);
-  let totalCostAll=0;
-  allSkus.forEach(sku=>{totalCostAll+=recRows.filter(p=>p.sku===sku).length*(costingMap[sku]||0)});
-  const totalProfit=totalRevenue-totalCostAll;
-  document.getElementById('pnlStats').innerHTML=`
-    <div class="stat-card purple animate-in"><div class="stat-label">Total Orders</div><div class="stat-value">${fmtInt(to)}</div><div class="stat-sub">Net: ${fmtInt(no)} · Returns: ${fmtInt(tr)}</div></div>
-    <div class="stat-card green animate-in"><div class="stat-label">Payment Received</div><div class="stat-value">${fmtInt(recCount)}</div><div class="stat-sub">+ve settlement rows</div></div>
-    <div class="stat-card cyan animate-in"><div class="stat-label">Revenue</div><div class="stat-value">${fmt(totalRevenue)}</div><div class="stat-sub">${fmtInt(recCount)} orders × avg ${fmt(recCount>0?totalRevenue/recCount:0)}</div></div>
-    <div class="stat-card orange animate-in"><div class="stat-label">Total Costing</div><div class="stat-value">${fmt(totalCostAll)}</div><div class="stat-sub">${fmtInt(recCount)} × per unit cost</div></div>
-    <div class="stat-card ${totalProfit>=0?'green':'red'} animate-in"><div class="stat-label">Net Profit / Loss</div><div class="stat-value" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">${fmt(totalProfit)}</div><div class="stat-sub">${totalProfit>=0?'<span class="up">Profit</span>':'<span class="down">Loss</span>'} · Margin: ${pct(Math.abs(totalProfit),totalRevenue)}%</div></div>
-    <div class="stat-card red animate-in"><div class="stat-label">Returns</div><div class="stat-value">${fmtInt(tr)}</div><div class="stat-sub">RTO: ${fmtInt(cr)} (${pct(cr,no)}%) · Cust: ${fmtInt(cu)} (${pct(cu,no)}%)</div></div>`;
-  document.getElementById('pnlReturnBreakdown').innerHTML=`
-    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--orange-bg);color:var(--orange)">🚚</div><div class="cat-info"><div class="num">${fmtInt(cr)}</div><h4>Courier Returns (RTO)</h4><p>${pct(cr,no)}% of delivered orders</p></div></div>
-    <div class="cat-card animate-in"><div class="cat-icon" style="background:var(--blue-bg);color:var(--blue)">👤</div><div class="cat-info"><div class="num">${fmtInt(cu)}</div><h4>Customer Returns</h4><p>${pct(cu,no)}% of delivered orders</p></div></div>`;
-  let ch='';allSkus.forEach(sku=>{
-    const oc=ORDERS_DATA.filter(o=>o.sku===sku).length,rc=RETURNS_DATA.filter(r=>r.sku===sku).length,
-    nt=oc-rc,co=costingMap[sku]||0,
-    sr=recRows.filter(p=>p.sku===sku),src=sr.length,
-    srv=sr.reduce((s,p)=>s+p.settlement_value,0),
-    sc=src*co,sp=srv-sc;
-    ch+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td><input type="number" class="costing-input" value="${co}" onchange="updateCosting('${sku}',this.value)"></td><td style="font-family:'Space Mono',monospace">${fmtInt(oc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmtInt(nt)}</td><td style="font-family:'Space Mono',monospace;color:var(--red)">${fmtInt(rc)} (${pct(rc,oc)}%)</td><td><span class="down">${pct(rc,oc)}%</span></td><td style="font-family:'Space Mono',monospace">${fmtInt(src)}</td><td style="font-family:'Space Mono',monospace;color:var(--orange)">${fmt(sc)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(srv)}</td><td style="font-family:'Space Mono',monospace;font-weight:700;color:${sp>=0?'var(--green)':'var(--red)'}">${fmt(sp)}</td></tr>`;
-  });document.getElementById('pnlCostingBody').innerHTML=ch;
-  let uh='';allSkus.forEach(sku=>{
-    const sa=PAYMENTS_DATA.filter(p=>p.sku===sku),
-    sr=sa.filter(p=>p.settlement_value>0),spn=sa.filter(p=>p.settlement_value<=0),
-    rv=sr.reduce((s,p)=>s+p.settlement_value,0),
-    avg=sr.length>0?rv/sr.length:0,est=spn.length*avg;
-    uh+=`<tr><td><span class="badge-tag badge-purple">${sku}</span></td><td style="font-family:'Space Mono',monospace">${fmtInt(spn.length)}</td><td style="font-family:'Space Mono',monospace;color:var(--green)">${fmt(rv)}</td><td style="font-family:'Space Mono',monospace;color:var(--orange)">${fmtInt(spn.length)} orders</td><td style="font-family:'Space Mono',monospace;color:var(--cyan)">${fmt(est)}</td></tr>`;
-  });document.getElementById('pnlUpcomingBody').innerHTML=uh;
+function rPL(){
+const to=OD.length,tr=RD.length,no=to-tr,del=no,cr=RD.filter(r=>r.rt==='courier_return').length,cu=RD.filter(r=>r.rt==='customer_return').length;
+const recR=PD.filter(p=>p.sv>0),recC=recR.length,totRev=recR.reduce((s,p)=>s+p.sv,0);
+let totCost=0;aS.forEach(sk=>{totCost+=recR.filter(p=>p.sk===sk).length*(cM[sk]||0)});
+const profit=totRev-totCost;
+document.getElementById('plS').innerHTML=`
+<div class="sc pur"><div class="sc-l">Total Orders</div><div class="sc-v">${I(to)}</div><div class="sc-s">Net: ${I(del)} · Returns: ${I(tr)}</div></div>
+<div class="sc grn"><div class="sc-l">Payment Received</div><div class="sc-v">${I(recC)}</div><div class="sc-s">+ve settlement rows</div></div>
+<div class="sc cyn"><div class="sc-l">Revenue</div><div class="sc-v">${F(totRev)}</div><div class="sc-s">${I(recC)} × avg ${F(recC>0?totRev/recC:0)}</div></div>
+<div class="sc org"><div class="sc-l">Total Costing</div><div class="sc-v">${F(totCost)}</div><div class="sc-s">${I(recC)} received × cost/unit</div></div>
+<div class="sc ${profit>=0?'grn':'red'}"><div class="sc-l">Net Profit / Loss</div><div class="sc-v" style="color:${profit>=0?'var(--grn)':'var(--red)'}">${F(profit)}</div><div class="sc-s">${profit>=0?'<span class="up">Profit</span>':'<span class="dn">Loss</span>'} · Margin: ${P(Math.abs(profit),totRev)}%</div></div>
+<div class="sc red"><div class="sc-l">Returns</div><div class="sc-v">${I(tr)}</div><div class="sc-s">RTO: ${I(cr)} (${P(cr,del)}%) · Cust: ${I(cu)} (${P(cu,del)}%) of delivered</div></div>`;
+document.getElementById('plR').innerHTML=`
+<div class="cc"><div class="ci" style="background:var(--org)15;color:var(--org)">🚚</div><div class="cx"><div class="nm">${I(cr)}</div><h4>Courier Returns (RTO)</h4><p>${P(cr,del)}% of delivered orders</p></div></div>
+<div class="cc"><div class="ci" style="background:var(--blu)15;color:var(--blu)">👤</div><div class="cx"><div class="nm">${I(cu)}</div><h4>Customer Returns</h4><p>${P(cu,del)}% of delivered orders</p></div></div>`;
+let ch='',tOc=0,tNt=0,tRc=0,tSrc=0,tSc=0,tSrv=0,tSp=0;
+aS.forEach(sk=>{
+const oc=OD.filter(o=>o.sk===sk).length,rc=RD.filter(r=>r.sk===sk).length,nt=oc-rc,co=cM[sk]||0,sr=recR.filter(p=>p.sk===sk),src=sr.length,srv=sr.reduce((s,p)=>s+p.sv,0),sc=src*co,sp=srv-sc;
+tOc+=oc;tNt+=nt;tRc+=rc;tSrc+=src;tSc+=sc;tSrv+=srv;tSp+=sp;
+ch+=`<tr><td><span class="bt bt-p">${sk}</span></td><td><input type="number" class="ci-i" value="${co}" onchange="uC('${sk}',this.value)"></td><td style="font-family:'JetBrains Mono',monospace">${I(oc)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${I(nt)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--red)">${I(rc)}</td><td><span class="dn">${P(rc,oc)}%</span></td><td style="font-family:'JetBrains Mono',monospace">${I(src)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--org)">${F(sc)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${F(srv)}</td><td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${sp>=0?'var(--grn)':'var(--red)'}">${F(sp)}</td></tr>`});
+ch+=`<tr class="sum-row"><td>TOTAL</td><td></td><td style="font-family:'JetBrains Mono',monospace">${I(tOc)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${I(tNt)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--red)">${I(tRc)}</td><td><span class="dn">${P(tRc,tOc)}%</span></td><td style="font-family:'JetBrains Mono',monospace">${I(tSrc)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--org)">${F(tSc)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${F(tSrv)}</td><td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${tSp>=0?'var(--grn)':'var(--red)'}">${F(tSp)}</td></tr>`;
+document.getElementById('plTB').innerHTML=ch;
+let uh='',tPen=0,tRv=0,tEst=0;
+aS.forEach(sk=>{const sa=PD.filter(p=>p.sk===sk),sr=sa.filter(p=>p.sv>0),spn=sa.filter(p=>p.sv<=0),rv=sr.reduce((s,p)=>s+p.sv,0),avg=sr.length>0?rv/sr.length:0,est=spn.length*avg;tPen+=spn.length;tRv+=rv;tEst+=est;uh+=`<tr><td><span class="bt bt-p">${sk}</span></td><td style="font-family:'JetBrains Mono',monospace">${I(spn.length)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${F(rv)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--org)">${I(spn.length)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--cyn)">${F(est)}</td></tr>`});
+uh+=`<tr class="sum-row"><td>TOTAL</td><td style="font-family:'JetBrains Mono',monospace">${I(tPen)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${F(tRv)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--org)">${I(tPen)}</td><td style="font-family:'JetBrains Mono',monospace;color:var(--cyn)">${F(tEst)}</td></tr>`;
+document.getElementById('plUP').innerHTML=uh;
 }
-function updateCosting(sku,v){costingMap[sku]=parseFloat(v)||0;renderPnl()}
-function handleGlobalSearch(v){if(!v.trim())return;switchSection('orders');document.getElementById('orderSearchInput').value=v;currentOrderPage=1;renderOrdersTable()}
+function uC(sk,v){cM[sk]=parseFloat(v)||0;rPL()}
+function gSrch(v){if(!v.trim())return;go('ord');document.getElementById('oSi').value=v;oP=1;rOT()}
 </script>
 </body>
 </html>
